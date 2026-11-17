@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="snowflake-source" content="cortex-agent-authored" />
+  <title>Object Dependency Network</title>
+  <script type="application/json" id="snowflake-report-metadata">
+  {
+    "generated": "2026-11-17",
+    "intent": "Interactive D3 force-directed graph of how source tables feed reports and how reports are shared with roles and users",
+    "dataSources": [
+      { "type": "query",
+        "sql": "SELECT SOURCE_NAME, SOURCE_TYPE, TARGET_NAME, TARGET_TYPE FROM HTML_REPORTS_QS.DEMO.OBJECT_DEPENDENCIES ORDER BY SOURCE_TYPE, SOURCE_NAME, TARGET_NAME" }
+    ],
+    "sections": [
+      { "id": "dependency-network", "title": "Dependency network",
+        "dataSources": [
+          { "type": "query",
+            "sql": "SELECT SOURCE_NAME, SOURCE_TYPE, TARGET_NAME, TARGET_TYPE FROM HTML_REPORTS_QS.DEMO.OBJECT_DEPENDENCIES ORDER BY SOURCE_TYPE, SOURCE_NAME, TARGET_NAME" }
+        ],
+        "producerNotes": "The 11 edges returned by the query are inlined as the EDGES array. Nodes are the distinct SOURCE_NAME/TARGET_NAME values with their *_TYPE; node size scales with degree. Re-run the query and replace EDGES to refresh. Relationship labels (feeds / shared with / granted to) are derived from the source and target types, not stored in the table." }
+    ]
+  }
+  </script>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: light-dark(#ffffff, #0f172a);
+      --fg: light-dark(#1f2937, #e5e7eb);
+      --muted: light-dark(#6b7280, #9ca3af);
+      --line: light-dark(#d1d5db, #374151);
+      --panel: light-dark(#f9fafb, #111827);
+      --edge: light-dark(#94a3b8, #64748b);
+      --edge-hl: light-dark(#334155, #e2e8f0);
+      --halo: light-dark(#ffffff, #0f172a);
+      --graph-h: clamp(380px, 78vw, 560px);
+    }
+    body {
+      font-family: -apple-system, system-ui, "Segoe UI", sans-serif;
+      max-width: 880px; width: 100%; box-sizing: border-box;
+      margin: 0 auto; padding: clamp(16px, 4vw, 24px);
+      color: var(--fg); background: var(--bg);
+    }
+    h1, h2 { color: light-dark(#0f172a, #f1f5f9); }
+    h1 { font-size: clamp(22px, 5vw, 28px); margin: 0 0 6px; }
+    h2 { font-size: 18px; margin: 28px 0 8px; }
+    p.lede { margin: 0 0 16px; color: var(--muted); }
+    img, svg { max-width: 100%; }
+
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: space-between; margin: 12px 0 4px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
+    .legend li { display: inline-flex; align-items: center; gap: 6px; }
+    .swatch { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--halo); box-shadow: 0 0 0 1px var(--line); }
+    .shake {
+      font: inherit; font-size: 13px; font-weight: 600; padding: 7px 14px; cursor: pointer;
+      border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--fg);
+    }
+    .shake:hover { border-color: #29b5e8; }
+    .shake:focus-visible { outline: 2px solid #29b5e8; outline-offset: 2px; }
+
+    .graph-box { position: relative; width: 100%; height: 100%; overflow: hidden; }
+    .graph-box svg { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; }
+    .hint { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
+
+    .link { stroke: var(--edge); stroke-width: 1.4; transition: opacity .15s, stroke .15s; }
+    .link.hl { stroke: var(--edge-hl); stroke-width: 2.2; }
+    .arrow { fill: var(--edge); }
+    .node { cursor: grab; transition: opacity .15s; }
+    .node:active { cursor: grabbing; }
+    .node circle { stroke: var(--halo); stroke-width: 2; }
+    .node.hl circle { stroke: var(--edge-hl); stroke-width: 2.5; }
+    .node:focus { outline: none; }
+    .node:focus-visible circle { stroke: #29b5e8; stroke-width: 3; }
+    .node text {
+      font-size: 11px; fill: var(--fg); pointer-events: none;
+      paint-order: stroke; stroke: var(--halo); stroke-width: 3.5px; stroke-linejoin: round;
+    }
+    .node.hl text { font-weight: 700; }
+    .dim { opacity: 0.12; }
+
+    /* Chart details menu */
+    .chart-card { position: relative; margin: 22px 0 8px; border-top: 1px solid var(--line); }
+    .chart-card-tools {
+      position: absolute; top: -13px; right: 12px; z-index: 2;
+      display: flex; gap: 2px; align-items: center; height: 26px; padding: 0 6px;
+      border: 1px solid transparent; border-radius: 999px;
+      background: Canvas; box-shadow: 0 1px 4px rgba(0,0,0,.1);
+      opacity: 0; pointer-events: none; transition: opacity .15s, border-color .15s;
+    }
+    .chart-card:hover .chart-card-tools, .chart-card:focus-within .chart-card-tools { opacity: 1; pointer-events: auto; border-color: var(--line); }
+    @media (hover: none) { .chart-card-tools { opacity: 1; pointer-events: auto; border-color: var(--line); } }
+    .chart-card-tools button {
+      padding: 4px 9px; border: 0; border-bottom: 2px solid transparent; background: none;
+      color: var(--muted); font: inherit; font-size: 12px; font-weight: 500; line-height: 14px; cursor: pointer; white-space: nowrap;
+    }
+    .chart-card-tools button:hover, .chart-card-tools button.active { color: CanvasText; }
+    .chart-card-tools button.active { border-bottom-color: #29b5e8; }
+    .chart-card-tools button:focus-visible, .cc-copy:focus-visible { outline: 2px solid #29b5e8; outline-offset: 1px; }
+    .cc-panel { display: none; height: var(--graph-h); overflow: auto; padding-top: 10px; box-sizing: border-box; }
+    .cc-panel.active { display: block; }
+    .cc-panel[data-panel="chart"] { overflow: hidden; }
+    .cc-panel pre { margin: 0; padding: 16px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); font: 12px/1.6 ui-monospace, Menlo, monospace; overflow: auto; }
+    .cc-sql { position: relative; }
+    .cc-copy { position: absolute; top: 8px; right: 8px; padding: 3px 10px; border: 1px solid var(--line); border-radius: 4px; background: Canvas; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+    .cc-info p { margin: 0 0 9px; font-size: 14px; }
+    .cc-status { min-height: 18px; margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+    @media (max-width: 500px) { .chart-card-tools { right: 0; gap: 0; padding: 0 2px; } .chart-card-tools button { padding: 4px 6px; font-size: 11px; } }
+
+    .table-wrap { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; font-size: 13px; }
+    th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; white-space: nowrap; }
+    th { background: light-dark(#f3f4f6, #1f2937); font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <h1>Object Dependency Network</h1>
+  <p class="lede">How source tables feed reports, and how those reports are shared with roles and users. Source: <code>HTML_REPORTS_QS.DEMO.OBJECT_DEPENDENCIES</code> (11 edges, 11 objects).</p>
+
+  <h2 id="dependency-network">Dependency network</h2>
+  <div class="toolbar">
+    <ul class="legend" id="legend" aria-label="Node types"></ul>
+    <button type="button" class="shake" id="shake">Shake it</button>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-card-tools" role="group" aria-label="Chart views">
+      <button type="button" class="active" data-view="chart" aria-pressed="true">Graph</button>
+      <button type="button" data-view="sql" aria-pressed="false">SQL</button>
+      <button type="button" data-view="preview" aria-pressed="false">Preview</button>
+      <button type="button" data-view="info" aria-pressed="false">Info</button>
+    </div>
+    <div class="cc-panel active" data-panel="chart">
+      <div class="graph-box" id="graph-box">
+        <svg id="graph" role="img" aria-label="Force-directed network: 3 source tables feed 2 reports, which are shared with 2 roles and 1 user; the roles are granted to 3 users."></svg>
+      </div>
+    </div>
+    <div class="cc-panel" data-panel="sql">
+      <div class="cc-sql"><button type="button" class="cc-copy">Copy</button>
+<pre><code>SELECT SOURCE_NAME, SOURCE_TYPE, TARGET_NAME, TARGET_TYPE
+FROM HTML_REPORTS_QS.DEMO.OBJECT_DEPENDENCIES
+ORDER BY SOURCE_TYPE, SOURCE_NAME, TARGET_NAME</code></pre></div>
+    </div>
+    <div class="cc-panel" data-panel="preview">
+      <div class="table-wrap"><table>
+        <thead><tr><th>SOURCE_NAME</th><th>SOURCE_TYPE</th><th>TARGET_NAME</th><th>TARGET_TYPE</th></tr></thead>
+        <tbody id="preview-body"></tbody>
+      </table></div>
+    </div>
+    <div class="cc-panel cc-info" data-panel="info">
+      <p><strong>What this shows:</strong> Every object in the dependency table as a node, and every row as a directed edge (arrow points from SOURCE_NAME to TARGET_NAME).</p>
+      <p><strong>Source:</strong> HTML_REPORTS_QS.DEMO.OBJECT_DEPENDENCIES, all 11 rows, no filters.</p>
+      <p><strong>How it was derived:</strong> Nodes are the distinct names on either side of an edge, colored by their type. Node size grows with the number of direct connections. A gentle horizontal pull orders the layout Source table → Report → Role → User so the flow reads left to right.</p>
+      <p><strong>Relationships:</strong> Source table → Report means the table feeds the report; Report → Role/User means the report is shared with that grantee; Role → User means the role is granted to the user. These labels are inferred from the node types.</p>
+      <p><strong>Caveat:</strong> The layout is a physics simulation, so positions differ from one load (or shake) to the next. Only position carries no meaning; colors and arrows do.</p>
+    </div>
+    <p class="cc-status" role="status" aria-live="polite"></p>
+  </div>
+  <p class="hint">Drag any node · hover (or tap) a node to highlight its neighbors · press <strong>Shake it</strong> to re-settle the layout.</p>
+
+  <script src="/libs/d3@7.9.0/d3.min.js"></script>
+  <script>
+  (function () {
+    // Rows from HTML_REPORTS_QS.DEMO.OBJECT_DEPENDENCIES (see SQL view).
+    const EDGES = [
+      ["Pipeline Review", "Report", "Jordan Patel", "User"],
+      ["Pipeline Review", "Report", "SALES_LEADERSHIP", "Role"],
+      ["Q3 Revenue Report", "Report", "FINANCE_ANALYST", "Role"],
+      ["Q3 Revenue Report", "Report", "SALES_LEADERSHIP", "Role"],
+      ["FINANCE_ANALYST", "Role", "Priya Nair", "User"],
+      ["SALES_LEADERSHIP", "Role", "Avery Chen", "User"],
+      ["SALES_LEADERSHIP", "Role", "Sam Rivera", "User"],
+      ["RAW.CUSTOMERS", "Source table", "Pipeline Review", "Report"],
+      ["RAW.CUSTOMERS", "Source table", "Q3 Revenue Report", "Report"],
+      ["RAW.ORDERS", "Source table", "Q3 Revenue Report", "Report"],
+      ["RAW.PIPELINE", "Source table", "Pipeline Review", "Report"]
+    ];
+    const TYPES = ["Source table", "Report", "Role", "User"];
+    const COLORS = { "Source table": "#0ea5e9", "Report": "#8b5cf6", "Role": "#f59e0b", "User": "#10b981" };
+    const REL = { "Source table": "feeds", "Report": "shared with", "Role": "granted to" };
+
+    // Legend
+    const legend = document.getElementById("legend");
+    TYPES.forEach(function (t) {
+      const li = document.createElement("li");
+      const sw = document.createElement("span");
+      sw.className = "swatch";
+      sw.style.background = COLORS[t];
+      li.appendChild(sw);
+      li.appendChild(document.createTextNode(t));
+      legend.appendChild(li);
+    });
+
+    // Preview table
+    const tbody = document.getElementById("preview-body");
+    EDGES.forEach(function (e) {
+      const tr = document.createElement("tr");
+      e.forEach(function (v) { const td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+      tbody.appendChild(tr);
+    });
+
+    // Build nodes, links, and neighbor sets
+    const byId = new Map();
+    function addNode(id, type) { if (!byId.has(id)) byId.set(id, { id: id, type: type, degree: 0 }); return byId.get(id); }
+    const links = EDGES.map(function (e) {
+      addNode(e[0], e[1]).degree++;
+      addNode(e[2], e[3]).degree++;
+      return { source: e[0], target: e[2], rel: REL[e[1]] || "links to" };
+    });
+    const nodes = Array.from(byId.values());
+    nodes.forEach(function (n) { n.r = 7 + n.degree * 1.6; });
+    const neighbors = new Map(nodes.map(function (n) { return [n.id, new Set([n.id])]; }));
+    links.forEach(function (l) { neighbors.get(l.source).add(l.target); neighbors.get(l.target).add(l.source); });
+
+    const box = document.getElementById("graph-box");
+    const svg = d3.select("#graph");
+    let W = box.clientWidth || 600, H = box.clientHeight || 420;
+
+    svg.append("defs").append("marker")
+      .attr("id", "arrow").attr("viewBox", "0 -5 10 10").attr("refX", 9).attr("refY", 0)
+      .attr("markerWidth", 7).attr("markerHeight", 7).attr("orient", "auto")
+      .append("path").attr("class", "arrow").attr("d", "M0,-4L10,0L0,4Z");
+
+    const link = svg.append("g").selectAll("line").data(links).join("line")
+      .attr("class", "link").attr("marker-end", "url(#arrow)");
+    link.append("title").text(function (l) { return l.source + " " + l.rel + " " + l.target; });
+
+    const node = svg.append("g").selectAll("g").data(nodes).join("g")
+      .attr("class", "node").attr("tabindex", 0).attr("role", "button")
+      .attr("aria-label", function (d) { return d.type + ": " + d.id + ", " + d.degree + " connection" + (d.degree === 1 ? "" : "s"); });
+    node.append("circle").attr("r", function (d) { return d.r; }).attr("fill", function (d) { return COLORS[d.type]; });
+    node.append("text").attr("text-anchor", "middle").attr("dy", function (d) { return d.r + 13; }).text(function (d) { return d.id; });
+    node.append("title").text(function (d) { return d.type + " · " + d.id + " · " + d.degree + " connection" + (d.degree === 1 ? "" : "s"); });
+
+    // Horizontal pull by type so the flow reads Source → Report → Role → User
+    function xFor(d) { return W * (0.12 + TYPES.indexOf(d.type) * 0.253); }
+    const PAD_X = 16, PAD_TOP = 14, PAD_BOTTOM = 26;
+
+    const sim = d3.forceSimulation(nodes)
+      .force("link", d3.forceLink(links).id(function (d) { return d.id; }))
+      .force("charge", d3.forceManyBody())
+      .force("collide", d3.forceCollide().radius(function (d) { return d.r + 16; }))
+      .force("x", d3.forceX(xFor).strength(0.12))
+      .force("y", d3.forceY(function () { return H / 2; }).strength(0.07))
+      .on("tick", ticked);
+
+    function sizeForces() {
+      const s = Math.max(0.55, Math.min(1, W / 760));
+      sim.force("link").distance(80 * s).strength(0.6);
+      sim.force("charge").strength(-300 * s);
+      sim.force("x").x(xFor);
+      sim.force("y").y(H / 2);
+    }
+
+    function clampNode(d) {
+      d.x = Math.max(PAD_X + d.r, Math.min(W - PAD_X - d.r, d.x));
+      d.y = Math.max(PAD_TOP + d.r, Math.min(H - PAD_BOTTOM - d.r, d.y));
+    }
+
+    function ticked() {
+      nodes.forEach(clampNode);
+      link.each(function (l) {
+        const dx = l.target.x - l.source.x, dy = l.target.y - l.source.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const ux = dx / len, uy = dy / len;
+        this.setAttribute("x1", l.source.x + ux * l.source.r);
+        this.setAttribute("y1", l.source.y + uy * l.source.r);
+        this.setAttribute("x2", l.target.x - ux * (l.target.r + 3));
+        this.setAttribute("y2", l.target.y - uy * (l.target.r + 3));
+      });
+      node.attr("transform", function (d) { return "translate(" + d.x + "," + d.y + ")"; });
+    }
+
+    function resize() {
+      const w = box.clientWidth, h = box.clientHeight;
+      if (!w || !h) return;                 // hidden panel
+      if (w === W && h === H && svg.attr("viewBox")) return;
+      W = w; H = h;
+      svg.attr("viewBox", "0 0 " + W + " " + H);
+      sizeForces();
+      sim.alpha(Math.max(sim.alpha(), 0.4)).restart();
+    }
+    // Start nodes near their type column so the first settle is quick
+    nodes.forEach(function (d, i) { d.x = xFor(d) + (Math.random() - 0.5) * 40; d.y = H / 2 + (i % 5 - 2) * 30; });
+    svg.attr("viewBox", "0 0 " + W + " " + H);
+    sizeForces();
+    new ResizeObserver(resize).observe(box);
+
+    // Hover highlight: the node, its direct neighbors, and the edges between them
+    let hovered = null, dragging = null;
+    function highlight(d) {
+      const nb = neighbors.get(d.id);
+      node.classed("dim", function (n) { return !nb.has(n.id); }).classed("hl", function (n) { return n.id === d.id; });
+      link.classed("dim", function (l) { return l.source.id !== d.id && l.target.id !== d.id; })
+          .classed("hl", function (l) { return l.source.id === d.id || l.target.id === d.id; });
+    }
+    function clearHighlight() {
+      node.classed("dim", false).classed("hl", false);
+      link.classed("dim", false).classed("hl", false);
+    }
+    node.on("pointerenter", function (ev, d) { hovered = d; if (!dragging) highlight(d); })
+        .on("pointerleave", function () { hovered = null; if (!dragging) clearHighlight(); })
+        .on("focus", function (ev, d) { highlight(d); })
+        .on("blur", function () { if (!dragging && !hovered) clearHighlight(); });
+
+    // Drag: pin while dragging, release on drop so the layout keeps reacting
+    node.call(d3.drag()
+      .on("start", function (ev, d) {
+        if (!ev.active) sim.alphaTarget(0.3).restart();
+        dragging = d; highlight(d);
+        d.fx = d.x; d.fy = d.y;
+      })
+      .on("drag", function (ev, d) {
+        d.fx = Math.max(PAD_X + d.r, Math.min(W - PAD_X - d.r, ev.x));
+        d.fy = Math.max(PAD_TOP + d.r, Math.min(H - PAD_BOTTOM - d.r, ev.y));
+      })
+      .on("end", function (ev, d) {
+        if (!ev.active) sim.alphaTarget(0);
+        d.fx = null; d.fy = null;
+        dragging = null;
+        if (hovered) highlight(hovered); else clearHighlight();
+      }));
+
+    // Shake it: kick every node and reheat the simulation so it re-settles
+    document.getElementById("shake").addEventListener("click", function () {
+      const k = Math.max(20, W / 18);
+      nodes.forEach(function (n) {
+        n.fx = null; n.fy = null;
+        n.vx = (n.vx || 0) + (Math.random() - 0.5) * k;
+        n.vy = (n.vy || 0) + (Math.random() - 0.5) * k;
+      });
+      sim.alpha(1).restart();
+    });
+
+    // Chart details menu
+    document.querySelectorAll(".chart-card").forEach(function (card) {
+      const buttons = card.querySelectorAll("[data-view]");
+      const status = card.querySelector(".cc-status");
+      buttons.forEach(function (button) {
+        button.addEventListener("click", function () {
+          buttons.forEach(function (b) {
+            b.classList.toggle("active", b === button);
+            b.setAttribute("aria-pressed", String(b === button));
+          });
+          card.querySelectorAll(".cc-panel").forEach(function (panel) {
+            panel.classList.toggle("active", panel.dataset.panel === button.dataset.view);
+          });
+          status.textContent = "";
+        });
+      });
+      const copy = card.querySelector(".cc-copy");
+      if (copy) copy.addEventListener("click", function () {
+        const declined = function () { status.textContent = "SQL was not copied. Select it and copy it manually."; };
+        status.textContent = "Confirm the copy in the dialog…";
+        try {
+          navigator.clipboard.writeText(card.querySelector(".cc-sql code").textContent)
+            .then(function () { status.textContent = "SQL copied."; }, declined);
+        } catch (e) { declined(); }
+      });
+    });
+  })();
+  </script>
+</body>
+</html>

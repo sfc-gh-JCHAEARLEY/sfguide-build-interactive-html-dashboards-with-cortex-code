@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="snowflake-source" content="cortex-agent-authored" />
+  <title>Quarterly business review · Q3 FY26</title>
+  <script type="application/json" id="snowflake-report-metadata">
+  {
+    "generated": "2026-11-17",
+    "intent": "4-slide quarterly business review deck for Q3 2026 (Jul 1 - Sep 30, 2026) built from sample sales data, with crossfading slides, prev/next arrows, clickable dots, a slide counter, wrap-around and arrow-key navigation",
+    "dataSources": [
+      { "type": "query",
+        "sql": "SELECT DATE_TRUNC('quarter', order_date) AS quarter_start, COUNT(*) AS orders, ROUND(SUM(revenue_usd), 2) AS revenue_usd, ROUND(AVG(revenue_usd), 2) AS aov_usd, MIN(order_date) AS min_date, MAX(order_date) AS max_date FROM HTML_REPORTS_QS.DEMO.SALES GROUP BY 1 ORDER BY 1" },
+      { "type": "query",
+        "sql": "SELECT region, ROUND(SUM(IFF(order_date BETWEEN '2026-04-01' AND '2026-06-30', revenue_usd, 0)), 2) AS q2_revenue, ROUND(SUM(IFF(order_date BETWEEN '2026-07-01' AND '2026-09-30', revenue_usd, 0)), 2) AS q3_revenue, ROUND((q3_revenue / NULLIF(q2_revenue, 0) - 1) * 100, 2) AS pct_change FROM HTML_REPORTS_QS.DEMO.SALES WHERE order_date BETWEEN '2026-04-01' AND '2026-09-30' GROUP BY region ORDER BY pct_change DESC" },
+      { "type": "query",
+        "sql": "SELECT segment, COUNT(*) AS orders, ROUND(SUM(revenue_usd), 2) AS q3_revenue, ROUND(100 * RATIO_TO_REPORT(SUM(revenue_usd)) OVER (), 2) AS share_pct FROM HTML_REPORTS_QS.DEMO.SALES WHERE order_date BETWEEN '2026-07-01' AND '2026-09-30' GROUP BY segment ORDER BY q3_revenue DESC" },
+      { "type": "query",
+        "sql": "SELECT DATE_TRUNC('month', order_date) AS month_start, COUNT(*) AS orders, ROUND(SUM(revenue_usd), 2) AS revenue_usd, ROUND(AVG(revenue_usd), 2) AS aov_usd FROM HTML_REPORTS_QS.DEMO.SALES WHERE order_date BETWEEN '2026-04-01' AND '2026-09-30' GROUP BY 1 ORDER BY 1" },
+      { "type": "query",
+        "sql": "SELECT segment, ROUND(SUM(IFF(order_date BETWEEN '2026-04-01' AND '2026-06-30', revenue_usd, 0)), 2) AS q2_revenue, ROUND(SUM(IFF(order_date BETWEEN '2026-07-01' AND '2026-09-30', revenue_usd, 0)), 2) AS q3_revenue, ROUND((q3_revenue / NULLIF(q2_revenue, 0) - 1) * 100, 2) AS pct_change FROM HTML_REPORTS_QS.DEMO.SALES WHERE order_date BETWEEN '2026-04-01' AND '2026-09-30' GROUP BY segment ORDER BY q3_revenue DESC" }
+    ],
+    "parameters": {
+      "q3": "2026-07-01 to 2026-09-30 (calendar quarter; labeled Q3 FY26 per the request, assuming fiscal year = calendar year)",
+      "q2": "2026-04-01 to 2026-06-30",
+      "table": "HTML_REPORTS_QS.DEMO.SALES (synthetic sample data)"
+    },
+    "sections": [
+      { "id": "slide-title", "title": "Quarterly business review",
+        "producerNotes": "Static title slide; no data." },
+      { "id": "slide-revenue", "title": "Total Q3 revenue",
+        "dataSources": [{ "type": "query", "sql": "SELECT DATE_TRUNC('quarter', order_date) AS quarter_start, COUNT(*) AS orders, ROUND(SUM(revenue_usd), 2) AS revenue_usd, ROUND(AVG(revenue_usd), 2) AS aov_usd, MIN(order_date) AS min_date, MAX(order_date) AS max_date FROM HTML_REPORTS_QS.DEMO.SALES GROUP BY 1 ORDER BY 1" }],
+        "producerNotes": "Q3 revenue $127,325,282.93 vs Q2 $124,333,565.10 = +2.41%. Q3 orders 5,047 vs Q2 5,003 = +0.88%. Values inlined; re-run the query to refresh." },
+      { "id": "slide-highlights", "title": "Highlights",
+        "dataSources": [
+          { "type": "query", "sql": "SELECT region, ROUND(SUM(IFF(order_date BETWEEN '2026-04-01' AND '2026-06-30', revenue_usd, 0)), 2) AS q2_revenue, ROUND(SUM(IFF(order_date BETWEEN '2026-07-01' AND '2026-09-30', revenue_usd, 0)), 2) AS q3_revenue, ROUND((q3_revenue / NULLIF(q2_revenue, 0) - 1) * 100, 2) AS pct_change FROM HTML_REPORTS_QS.DEMO.SALES WHERE order_date BETWEEN '2026-04-01' AND '2026-09-30' GROUP BY region ORDER BY pct_change DESC" },
+          { "type": "query", "sql": "SELECT segment, COUNT(*) AS orders, ROUND(SUM(revenue_usd), 2) AS q3_revenue, ROUND(100 * RATIO_TO_REPORT(SUM(revenue_usd)) OVER (), 2) AS share_pct FROM HTML_REPORTS_QS.DEMO.SALES WHERE order_date BETWEEN '2026-07-01' AND '2026-09-30' GROUP BY segment ORDER BY q3_revenue DESC" },
+          { "type": "query", "sql": "SELECT segment, ROUND(SUM(IFF(order_date BETWEEN '2026-04-01' AND '2026-06-30', revenue_usd, 0)), 2) AS q2_revenue, ROUND(SUM(IFF(order_date BETWEEN '2026-07-01' AND '2026-09-30', revenue_usd, 0)), 2) AS q3_revenue, ROUND((q3_revenue / NULLIF(q2_revenue, 0) - 1) * 100, 2) AS pct_change FROM HTML_REPORTS_QS.DEMO.SALES WHERE order_date BETWEEN '2026-04-01' AND '2026-09-30' GROUP BY segment ORDER BY q3_revenue DESC" },
+          { "type": "query", "sql": "SELECT DATE_TRUNC('month', order_date) AS month_start, COUNT(*) AS orders, ROUND(SUM(revenue_usd), 2) AS revenue_usd, ROUND(AVG(revenue_usd), 2) AS aov_usd FROM HTML_REPORTS_QS.DEMO.SALES WHERE order_date BETWEEN '2026-04-01' AND '2026-09-30' GROUP BY 1 ORDER BY 1" }
+        ],
+        "producerNotes": "Fastest-growing region = highest Q3/Q2 % change (APAC +15.11%). Top segment = highest Q3 revenue (Enterprise, 34.76% share, +5.77% vs Q2). AOV = AVG(revenue_usd): Q2 $24,851.80 -> Q3 $25,227.91 (+1.51%); monthly Jul $24,994.66, Aug $25,252.81, Sep $25,440.68." },
+      { "id": "slide-next", "title": "Next quarter",
+        "dataSources": [
+          { "type": "query", "sql": "SELECT region, ROUND(SUM(IFF(order_date BETWEEN '2026-04-01' AND '2026-06-30', revenue_usd, 0)), 2) AS q2_revenue, ROUND(SUM(IFF(order_date BETWEEN '2026-07-01' AND '2026-09-30', revenue_usd, 0)), 2) AS q3_revenue, ROUND((q3_revenue / NULLIF(q2_revenue, 0) - 1) * 100, 2) AS pct_change FROM HTML_REPORTS_QS.DEMO.SALES WHERE order_date BETWEEN '2026-04-01' AND '2026-09-30' GROUP BY region ORDER BY pct_change DESC" },
+          { "type": "query", "sql": "SELECT segment, ROUND(SUM(IFF(order_date BETWEEN '2026-04-01' AND '2026-06-30', revenue_usd, 0)), 2) AS q2_revenue, ROUND(SUM(IFF(order_date BETWEEN '2026-07-01' AND '2026-09-30', revenue_usd, 0)), 2) AS q3_revenue, ROUND((q3_revenue / NULLIF(q2_revenue, 0) - 1) * 100, 2) AS pct_change FROM HTML_REPORTS_QS.DEMO.SALES WHERE order_date BETWEEN '2026-04-01' AND '2026-09-30' GROUP BY segment ORDER BY q3_revenue DESC" }
+        ],
+        "producerNotes": "Recommendations are derived from the region and segment Q2->Q3 deltas: APAC +$4.51M; EMEA + North America combined -$3.95M; Mid-market the only shrinking segment (-3.21%). Rewrite if the data changes." }
+    ]
+  }
+  </script>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: light-dark(#e9eef4, #0a101c);
+      --card: light-dark(#ffffff, #121a2a);
+      --ink: light-dark(#0f172a, #f1f5f9);
+      --muted: light-dark(#5b6678, #9aa6b8);
+      --line: light-dark(#d6dde7, #263247);
+      --accent: light-dark(#0b7fb5, #4cc3f0);
+      --good: light-dark(#0f7a43, #4ade80);
+      --bad: light-dark(#b42318, #f87171);
+      --fade: 300ms;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+    img, svg { max-width: 100%; height: auto; }
+
+    .deck {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      padding: clamp(8px, 2vw, 20px);
+      gap: clamp(8px, 1.5vw, 14px);
+    }
+
+    /* All slides share one grid cell, so the stage is as tall as the tallest
+       slide and the crossfade can overlap the outgoing and incoming slide. */
+    .stage {
+      position: relative;
+      flex: 1;
+      display: grid;
+      min-height: clamp(380px, calc(100dvh - 110px), 1000px);
+    }
+    .slide {
+      grid-area: 1 / 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: clamp(28px, 6vw, 80px) clamp(20px, 7vw, 96px);
+      border-radius: clamp(10px, 1.6vw, 18px);
+      background: var(--card);
+      border: 1px solid var(--line);
+      box-shadow: 0 10px 30px light-dark(rgba(15, 23, 42, .08), rgba(0, 0, 0, .35));
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity var(--fade) ease, visibility 0s linear var(--fade);
+    }
+    .slide.is-active {
+      opacity: 1;
+      visibility: visible;
+      transition: opacity var(--fade) ease, visibility 0s linear 0s;
+    }
+
+    .counter {
+      position: absolute;
+      top: clamp(10px, 2vw, 18px);
+      right: clamp(12px, 2.4vw, 22px);
+      z-index: 3;
+      margin: 0;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .02em;
+      color: var(--muted);
+      background: light-dark(rgba(255, 255, 255, .85), rgba(18, 26, 42, .85));
+      border: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      font-size: clamp(12px, 1.4vw, 15px);
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .slide h1, .slide h2 { margin: 0; line-height: 1.05; letter-spacing: -.02em; }
+    .source {
+      margin: clamp(20px, 4vw, 40px) 0 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* Slide 1 */
+    .slide--title {
+      background: linear-gradient(135deg, #0b2f4d 0%, #0b5f8a 55%, #29b5e8 100%);
+      border-color: transparent;
+      color: #fff;
+    }
+    .slide--title .eyebrow { color: rgba(255, 255, 255, .8); }
+    .slide--title h1 { font-size: clamp(38px, 8vw, 96px); max-width: 14ch; }
+    .slide--title .subtitle {
+      margin: clamp(16px, 3vw, 28px) 0 0;
+      font-size: clamp(16px, 2.4vw, 26px);
+      color: rgba(255, 255, 255, .88);
+    }
+
+    /* Slide 2 */
+    .slide--number { align-items: center; text-align: center; }
+    .giant {
+      margin: 0;
+      font-size: clamp(64px, 17vw, 200px);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -.04em;
+      font-variant-numeric: tabular-nums;
+    }
+    .delta {
+      margin: clamp(10px, 2vw, 18px) 0 0;
+      font-size: clamp(20px, 3.6vw, 40px);
+      font-weight: 700;
+      color: var(--good);
+    }
+    .context { margin: 12px 0 0; font-size: clamp(14px, 1.6vw, 17px); color: var(--muted); }
+
+    /* Slides 3 and 4 */
+    .slide h2 { font-size: clamp(30px, 5.4vw, 60px); margin-bottom: clamp(18px, 3.5vw, 36px); }
+    .points { margin: 0; padding: 0; list-style: none; display: grid; gap: clamp(14px, 2.4vw, 24px); max-width: 60rem; }
+    .points li {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: clamp(12px, 2vw, 20px);
+      align-items: start;
+      font-size: clamp(16px, 2vw, 22px);
+      line-height: 1.45;
+    }
+    .points .marker {
+      display: inline-grid;
+      place-items: center;
+      width: clamp(30px, 3.6vw, 40px);
+      height: clamp(30px, 3.6vw, 40px);
+      border-radius: 50%;
+      background: light-dark(#e3f4fc, #0f3550);
+      color: var(--accent);
+      font-weight: 800;
+      font-size: clamp(14px, 1.6vw, 17px);
+    }
+    .points strong { color: var(--ink); }
+    .points .sub { display: block; margin-top: 2px; font-size: .82em; color: var(--muted); }
+    .up { color: var(--good); font-weight: 700; white-space: nowrap; }
+    .down { color: var(--bad); font-weight: 700; white-space: nowrap; }
+
+    /* Controls under the slide */
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(10px, 3vw, 22px);
+      padding: 4px 0 2px;
+    }
+    .arrow {
+      display: inline-grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--ink);
+      font: inherit;
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .arrow:hover { border-color: var(--accent); }
+    .arrow svg { width: 20px; height: 20px; }
+    .dots { display: flex; gap: 4px; }
+    .dot {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 0;
+      background: none;
+      cursor: pointer;
+      display: inline-grid;
+      place-items: center;
+    }
+    .dot::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: light-dark(#b6c1cf, #3a475d);
+      transition: width .2s ease, background .2s ease;
+    }
+    .dot:hover::before { background: var(--muted); }
+    .dot[aria-current="true"]::before { width: 22px; background: var(--accent); }
+    .arrow:focus-visible, .dot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 999px; }
+
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      :root { --fade: 0ms; }
+      .dot::before { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="deck" aria-roledescription="carousel" aria-label="Quarterly business review, Q3 FY26">
+    <div class="stage">
+      <p class="counter" id="counter" aria-live="polite" aria-atomic="true">Slide 1 of 4</p>
+
+      <section class="slide slide--title is-active" id="slide-title" aria-roledescription="slide" aria-label="Slide 1 of 4: Title">
+        <p class="eyebrow">QBR</p>
+        <h1>Quarterly business review</h1>
+        <p class="subtitle">Example Corp · Q3 FY26 · sample data</p>
+      </section>
+
+      <section class="slide slide--number" id="slide-revenue" aria-roledescription="slide" aria-label="Slide 2 of 4: Total Q3 revenue" aria-hidden="true" inert>
+        <p class="eyebrow">Total Q3 revenue</p>
+        <p class="giant">$127.3M</p>
+        <p class="delta">+2.4% vs Q2</p>
+        <p class="context">Q2: $124.3M · Q3 orders: 5,047 (+0.9% vs Q2)</p>
+        <p class="source">Source: HTML_REPORTS_QS.DEMO.SALES · Q3 = Jul 1–Sep 30, 2026 · Q2 = Apr 1–Jun 30, 2026</p>
+      </section>
+
+      <section class="slide" id="slide-highlights" aria-roledescription="slide" aria-label="Slide 3 of 4: Highlights" aria-hidden="true" inert>
+        <h2>Highlights</h2>
+        <ul class="points">
+          <li>
+            <span class="marker" aria-hidden="true">1</span>
+            <span><strong>APAC is the fastest-growing region</strong>, <span class="up">+15.1%</span> vs Q2 ($29.8M → $34.3M). It went from the smallest region in Q2 to the largest in Q3.
+              <span class="sub">LATAM +7.9% · North America −4.0% · EMEA −8.4%</span></span>
+          </li>
+          <li>
+            <span class="marker" aria-hidden="true">2</span>
+            <span><strong>Enterprise is the top segment</strong> at $44.3M, 34.8% of Q3 revenue and <span class="up">+5.8%</span> vs Q2.
+              <span class="sub">SMB $42.6M (33.5%) · Mid-market $40.4M (31.8%)</span></span>
+          </li>
+          <li>
+            <span class="marker" aria-hidden="true">3</span>
+            <span><strong>Average order value is trending up</strong>: $25,228 in Q3, <span class="up">+1.5%</span> vs Q2 ($24,852), and higher in every month of the quarter.
+              <span class="sub">Jul $24,995 → Aug $25,253 → Sep $25,441</span></span>
+          </li>
+        </ul>
+        <p class="source">Source: HTML_REPORTS_QS.DEMO.SALES · growth compares Q3 with Q2 2026</p>
+      </section>
+
+      <section class="slide" id="slide-next" aria-roledescription="slide" aria-label="Slide 4 of 4: Next quarter" aria-hidden="true" inert>
+        <h2>Next quarter</h2>
+        <ol class="points">
+          <li>
+            <span class="marker" aria-hidden="true">1</span>
+            <span><strong>Invest behind APAC's momentum.</strong> It added $4.5M quarter over quarter and is now the largest region. Put new pipeline and coverage there first.</span>
+          </li>
+          <li>
+            <span class="marker" aria-hidden="true">2</span>
+            <span><strong>Run a win/loss review in EMEA and North America.</strong> They fell <span class="down">−8.4%</span> and <span class="down">−4.0%</span>, giving back $4.0M between them vs Q2.</span>
+          </li>
+          <li>
+            <span class="marker" aria-hidden="true">3</span>
+            <span><strong>Reset the Mid-market motion.</strong> It was the only segment to shrink (<span class="down">−3.2%</span>) while Enterprise (+5.8%) and SMB (+4.7%) grew.</span>
+          </li>
+        </ol>
+        <p class="source">Recommendations derived from Q2→Q3 2026 region and segment changes in HTML_REPORTS_QS.DEMO.SALES</p>
+      </section>
+    </div>
+
+    <nav class="controls" aria-label="Slide navigation">
+      <button type="button" class="arrow" id="prev" aria-label="Previous slide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <div class="dots" id="dots">
+        <button type="button" class="dot" data-index="0" aria-label="Go to slide 1" aria-current="true"></button>
+        <button type="button" class="dot" data-index="1" aria-label="Go to slide 2"></button>
+        <button type="button" class="dot" data-index="2" aria-label="Go to slide 3"></button>
+        <button type="button" class="dot" data-index="3" aria-label="Go to slide 4"></button>
+      </div>
+      <button type="button" class="arrow" id="next" aria-label="Next slide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </nav>
+  </main>
+
+  <script>
+    (function () {
+      var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+      var dots = Array.prototype.slice.call(document.querySelectorAll('.dot'));
+      var counter = document.getElementById('counter');
+      var total = slides.length;
+      var current = 0;
+
+      function show(index) {
+        current = ((index % total) + total) % total;   // wrap around in both directions
+        slides.forEach(function (slide, i) {
+          var active = i === current;
+          slide.classList.toggle('is-active', active);
+          slide.setAttribute('aria-hidden', String(!active));
+          if (active) slide.removeAttribute('inert');
+          else slide.setAttribute('inert', '');
+        });
+        dots.forEach(function (dot, i) {
+          if (i === current) dot.setAttribute('aria-current', 'true');
+          else dot.removeAttribute('aria-current');
+        });
+        counter.textContent = 'Slide ' + (current + 1) + ' of ' + total;
+      }
+
+      document.getElementById('prev').addEventListener('click', function () { show(current - 1); });
+      document.getElementById('next').addEventListener('click', function () { show(current + 1); });
+      dots.forEach(function (dot) {
+        dot.addEventListener('click', function () { show(Number(dot.dataset.index)); });
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+        // Leave arrow keys alone while the user is typing or using a native control.
+        var t = e.target;
+        if (t && t.closest && t.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
+        e.preventDefault();
+        show(current + (e.key === 'ArrowRight' ? 1 : -1));
+      });
+
+      show(0);
+    })();
+  </script>
+</body>
+</html>

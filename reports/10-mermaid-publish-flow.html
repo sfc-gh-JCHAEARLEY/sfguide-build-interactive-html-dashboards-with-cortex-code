@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="snowflake-source" content="cortex-agent-authored" />
+  <title>How an HTML report gets published</title>
+  <script type="application/json" id="snowflake-report-metadata">
+  {
+    "generated": "2026-11-17",
+    "intent": "Explain how an HTML report gets published, using two Mermaid diagrams (pipeline flowchart and publish sequence) that match light or dark mode.",
+    "sections": [
+      { "id": "pipeline", "title": "The render pipeline",
+        "producerNotes": "Static Mermaid flowchart (LR): CoCo writes HTML -> Sanitize -> Renderer -> Sandbox -> Report. No data source; edit the FLOW_SRC string in the inline script to change it." },
+      { "id": "publish-sequence", "title": "Publishing and updating",
+        "producerNotes": "Static Mermaid sequence diagram between You, CoCo, and Snowflake. No data source; edit the SEQ_SRC string in the inline script." }
+    ],
+    "assumptions": [
+      "Mermaid theme is 'dark' when prefers-color-scheme is dark, otherwise 'default'; diagrams re-render when the scheme changes.",
+      "Sequence arrows follow the guide exactly: '->' lines are solid (->>), 'Snowflake --> You' return lines are dashed (-->>)."
+    ]
+  }
+  </script>
+  <style>
+    :root { color-scheme: light dark; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, system-ui, "Segoe UI", sans-serif;
+      max-width: 1120px; width: 100%;
+      margin: 0 auto; padding: clamp(16px, 4vw, 32px);
+      color: light-dark(#1f2937, #e5e7eb);
+      background: light-dark(#ffffff, #0f172a);
+      line-height: 1.55;
+    }
+    h1, h2 { color: light-dark(#0f172a, #f1f5f9); }
+    h1 { font-size: clamp(1.5rem, 4vw, 2.1rem); margin: 0 0 6px; }
+    .lede { margin: 0 0 24px; color: light-dark(#4b5563, #9ca3af); max-width: 70ch; }
+    img, svg { max-width: 100%; height: auto; }
+    .grid {
+      display: grid; gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+      align-items: start;
+    }
+    .card {
+      border: 1px solid light-dark(#e5e7eb, #334155);
+      border-radius: 10px;
+      background: light-dark(#f9fafb, #111827);
+      padding: clamp(14px, 3vw, 20px);
+      min-width: 0;
+    }
+    .card h2 { font-size: 1.1rem; margin: 0 0 4px; }
+    .card p { margin: 0 0 14px; font-size: 0.92rem; color: light-dark(#4b5563, #9ca3af); }
+    .diagram { min-height: 160px; display: flex; justify-content: center; align-items: center; overflow-x: auto; }
+    .diagram svg { display: block; margin: 0 auto; }
+    .diagram .err { color: light-dark(#6b7280, #9ca3af); font-size: 0.9rem; font-style: italic; }
+    .steps { margin: 24px 0 0; padding-left: 1.2em; font-size: 0.95rem; }
+    .steps li { margin: 4px 0; }
+    .hint { margin-top: 18px; font-size: 0.82rem; color: light-dark(#6b7280, #9ca3af); }
+  </style>
+</head>
+<body>
+  <h1>How an HTML report gets published</h1>
+  <p class="lede">CoCo writes a self-contained HTML file. Before anyone sees it, Snowflake sanitizes it and renders it inside a locked-down sandbox. Publishing turns the file into an artifact with a stable link that stays the same as you ship new versions.</p>
+
+  <div class="grid">
+    <section class="card" id="pipeline">
+      <h2>The render pipeline</h2>
+      <p>What happens to the HTML between CoCo writing it and a reader opening it.</p>
+      <div class="diagram" id="flow-diagram" role="img" aria-label="Flowchart: CoCo writes HTML, then Sanitize, then Renderer, then Sandbox, then Report."></div>
+    </section>
+
+    <section class="card" id="publish-sequence">
+      <h2>Publishing and updating</h2>
+      <p>The conversation between you, CoCo, and Snowflake when you publish and then republish.</p>
+      <div class="diagram" id="seq-diagram" role="img" aria-label="Sequence diagram: You ask CoCo to create a report. CoCo saves the .html file to Snowflake. You publish the artifact and Snowflake returns one stable link. You publish changes and Snowflake returns the same link with a new version."></div>
+    </section>
+  </div>
+
+  <ol class="steps">
+    <li><strong>Sanitize</strong> strips anything outside the allowed surface (inline handlers, remote resources).</li>
+    <li><strong>Renderer</strong> loads only the vendored <code>/libs/</code> libraries the page references.</li>
+    <li><strong>Sandbox</strong> runs the page with a strict Content-Security-Policy and no network access.</li>
+    <li><strong>Report</strong> is what the reader sees, behind a link that doesn't change between versions.</li>
+  </ol>
+
+  <p class="hint">Diagram colors follow your system's light or dark setting and update if you switch.</p>
+
+  <script src="/libs/mermaid@10.9.6/mermaid.min.js"></script>
+  <script>
+    (function () {
+      var FLOW_SRC = [
+        'flowchart LR',
+        '  A["CoCo writes HTML"] --> B["Sanitize"]',
+        '  B --> C["Renderer"]',
+        '  C --> D["Sandbox"]',
+        '  D --> E["Report"]'
+      ].join('\n');
+
+      var SEQ_SRC = [
+        'sequenceDiagram',
+        '  participant You',
+        '  participant CoCo',
+        '  participant Snowflake',
+        '  You->>CoCo: Create a report',
+        '  CoCo->>Snowflake: Save the .html file',
+        '  You->>Snowflake: Publish artifact',
+        '  Snowflake-->>You: One stable link',
+        '  You->>Snowflake: Publish changes',
+        '  Snowflake-->>You: Same link, new version'
+      ].join('\n');
+
+      var targets = [
+        { el: document.getElementById('flow-diagram'), src: FLOW_SRC },
+        { el: document.getElementById('seq-diagram'), src: SEQ_SRC }
+      ];
+
+      var darkQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+      var renderCount = 0;
+
+      function showError(el, message) {
+        var p = document.createElement('p');
+        p.className = 'err';
+        p.textContent = message;
+        el.replaceChildren(p);
+      }
+
+      function renderAll() {
+        if (typeof mermaid === 'undefined') {
+          targets.forEach(function (t) { showError(t.el, 'Diagram library failed to load.'); });
+          return;
+        }
+        var isDark = !!(darkQuery && darkQuery.matches);
+        mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: 'strict',
+          theme: isDark ? 'dark' : 'default',
+          flowchart: { useMaxWidth: true },
+          sequence: { useMaxWidth: true }
+        });
+        targets.forEach(function (t) {
+          renderCount += 1;
+          var id = 'mmd-' + renderCount;
+          mermaid.render(id, t.src).then(function (result) {
+            t.el.innerHTML = result.svg;
+          }).catch(function (err) {
+            showError(t.el, 'Could not render diagram: ' + (err && err.message ? err.message : String(err)));
+          });
+        });
+      }
+
+      renderAll();
+
+      if (darkQuery) {
+        if (typeof darkQuery.addEventListener === 'function') {
+          darkQuery.addEventListener('change', renderAll);
+        } else if (typeof darkQuery.addListener === 'function') {
+          darkQuery.addListener(renderAll);
+        }
+      }
+    })();
+  </script>
+</body>
+</html>

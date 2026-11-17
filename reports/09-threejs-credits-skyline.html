@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="snowflake-source" content="cortex-agent-authored" />
+  <title>Warehouse Credits Skyline</title>
+  <script type="application/json" id="snowflake-report-metadata">
+  {
+    "generated": "2026-11-17",
+    "intent": "3D Three.js skyline of hourly warehouse credits for one week: 24 hour columns x 7 day rows, bar height and color = credits",
+    "dataSources": [
+      { "type": "query",
+        "sql": "SELECT HOUR_START, DAY_NAME, HOUR_OF_DAY, CREDITS FROM HTML_REPORTS_QS.DEMO.WAREHOUSE_CREDITS_HOURLY ORDER BY HOUR_START" }
+    ],
+    "sections": [
+      { "id": "credits-skyline", "title": "Credits by day and hour",
+        "dataSources": [
+          { "type": "query",
+            "sql": "SELECT DAY_NAME, MIN(HOUR_START)::DATE AS DAY_DATE, COUNT(*) AS N, LISTAGG(TO_VARCHAR(CREDITS, 'FM90.00'), ',') WITHIN GROUP (ORDER BY HOUR_OF_DAY) AS CREDITS_BY_HOUR, SUM(CREDITS) AS DAY_TOTAL FROM HTML_REPORTS_QS.DEMO.WAREHOUSE_CREDITS_HOURLY GROUP BY DAY_NAME ORDER BY DAY_DATE" }
+        ],
+        "producerNotes": "The 7 rows of the pivot query (24 hourly values each, 168 total, week of 2026-11-09 to 2026-11-15) are inlined in the #credits-data JSON block. Days are rendered in the fixed order Mon..Sun. Color scale runs from the week's min (0.84) to max (6.00). Re-run the query and replace #credits-data to refresh." }
+    ]
+  }
+  </script>
+  <script type="application/json" id="credits-data">
+  {
+    "days": [
+      { "day": "Mon", "date": "2026-11-09", "total": 73.00, "credits": [2.36,2.58,2.66,1.00,1.50,2.26,1.48,0.88,4.42,4.02,4.24,4.72,4.30,5.20,5.00,5.04,4.20,4.28,5.24,0.98,1.18,1.66,1.40,2.40] },
+      { "day": "Tue", "date": "2026-11-10", "total": 77.86, "credits": [1.28,1.28,1.24,0.96,1.52,1.86,1.46,2.74,4.02,4.70,5.98,5.20,4.90,5.80,5.06,5.96,4.70,5.64,5.90,2.10,2.06,1.66,0.86,0.98] },
+      { "day": "Wed", "date": "2026-11-11", "total": 79.80, "credits": [1.26,2.34,1.34,1.74,2.50,2.68,1.30,2.18,5.02,6.00,4.74,4.18,4.06,5.80,5.26,4.62,5.52,5.86,5.62,1.04,2.64,1.36,1.64,1.10] },
+      { "day": "Thu", "date": "2026-11-12", "total": 78.42, "credits": [1.08,2.38,1.36,1.26,2.36,2.80,2.30,1.60,4.40,4.16,5.42,4.96,5.06,4.02,5.02,4.04,5.12,4.30,5.78,2.24,2.30,2.80,2.70,0.96] },
+      { "day": "Fri", "date": "2026-11-13", "total": 78.90, "credits": [0.84,1.44,2.36,2.36,2.54,1.44,2.40,2.76,6.00,4.48,4.70,5.06,5.62,4.70,4.10,4.74,5.96,4.64,5.06,1.76,1.76,1.02,1.40,1.76] },
+      { "day": "Sat", "date": "2026-11-14", "total": 39.06, "credits": [1.06,1.74,1.12,1.06,1.16,1.90,1.04,1.14,1.18,0.90,1.06,2.34,1.44,1.84,1.48,2.08,1.32,2.04,2.30,1.60,2.20,2.80,1.60,2.66] },
+      { "day": "Sun", "date": "2026-11-15", "total": 42.50, "credits": [1.34,1.82,1.14,1.08,2.78,1.14,2.54,1.74,1.32,1.34,2.56,2.72,2.68,1.70,2.22,0.90,1.28,1.34,1.46,1.98,2.74,1.58,1.52,1.58] }
+    ]
+  }
+  </script>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: light-dark(#ffffff, #0f172a);
+      --fg: light-dark(#1f2937, #e5e7eb);
+      --muted: light-dark(#6b7280, #9ca3af);
+      --line: light-dark(#d1d5db, #374151);
+      --panel: light-dark(#f9fafb, #111827);
+      --stage-h: clamp(320px, 62vw, 520px);
+    }
+    body {
+      font-family: -apple-system, system-ui, "Segoe UI", sans-serif;
+      max-width: 880px; width: 100%; box-sizing: border-box;
+      margin: 0 auto; padding: clamp(16px, 4vw, 24px);
+      color: var(--fg); background: var(--bg);
+    }
+    h1, h2 { color: light-dark(#0f172a, #f1f5f9); }
+    h1 { font-size: clamp(22px, 5vw, 28px); margin: 0 0 6px; }
+    h2 { font-size: 18px; margin: 28px 0 8px; }
+    p.lede { margin: 0 0 14px; color: var(--muted); }
+    img, svg { max-width: 100%; height: auto; }
+
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 14px 0 4px; }
+    .kpi { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--panel); }
+    .kpi .v { font-size: 20px; font-weight: 700; }
+    .kpi .l { font-size: 12px; color: var(--muted); }
+
+    .scale { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); margin: 12px 0 0; flex-wrap: wrap; }
+    .scale .bar { width: min(220px, 50vw); height: 10px; border-radius: 5px; background: linear-gradient(90deg, #2563eb, #14b8a6, #facc15, #ef4444); }
+
+    .stage {
+      position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 8px;
+      background: radial-gradient(ellipse at 50% 30%, light-dark(#f8fafc, #1e293b), light-dark(#e2e8f0, #0b1120));
+      color: var(--fg);
+    }
+    .stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; outline: none; }
+    .stage.dragging canvas { cursor: grabbing; }
+    .stage canvas:focus-visible { box-shadow: inset 0 0 0 2px #29b5e8; }
+    .tip {
+      position: absolute; left: 0; top: 0; pointer-events: none; z-index: 3;
+      padding: 7px 10px; border-radius: 6px; font-size: 12px; line-height: 1.45; white-space: nowrap;
+      background: light-dark(rgba(255,255,255,.96), rgba(15,23,42,.96)); color: var(--fg);
+      border: 1px solid var(--line); box-shadow: 0 4px 14px rgba(0,0,0,.18);
+    }
+    .tip-day { font-weight: 700; }
+    .tip-val { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .fallback {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      padding: 24px; text-align: center; font-size: 15px; color: var(--muted);
+    }
+    .fallback[hidden], .tip[hidden] { display: none; }
+    .hint { font-size: 13px; color: var(--muted); margin: 8px 0 0; text-align: center; }
+
+    /* Chart details menu */
+    .chart-card { position: relative; margin: 22px 0 8px; border-top: 1px solid var(--line); }
+    .chart-card-tools {
+      position: absolute; top: -13px; right: 12px; z-index: 4;
+      display: flex; gap: 2px; align-items: center; height: 26px; padding: 0 6px;
+      border: 1px solid transparent; border-radius: 999px;
+      background: Canvas; box-shadow: 0 1px 4px rgba(0,0,0,.1);
+      opacity: 0; pointer-events: none; transition: opacity .15s, border-color .15s;
+    }
+    .chart-card:hover .chart-card-tools, .chart-card:focus-within .chart-card-tools { opacity: 1; pointer-events: auto; border-color: var(--line); }
+    @media (hover: none) { .chart-card-tools { opacity: 1; pointer-events: auto; border-color: var(--line); } }
+    .chart-card-tools button {
+      padding: 4px 9px; border: 0; border-bottom: 2px solid transparent; background: none;
+      color: var(--muted); font: inherit; font-size: 12px; font-weight: 500; line-height: 14px; cursor: pointer; white-space: nowrap;
+    }
+    .chart-card-tools button:hover, .chart-card-tools button.active { color: CanvasText; }
+    .chart-card-tools button.active { border-bottom-color: #29b5e8; }
+    .chart-card-tools button:focus-visible, .cc-copy:focus-visible { outline: 2px solid #29b5e8; outline-offset: 1px; }
+    .cc-panel { display: none; height: var(--stage-h); overflow: auto; padding-top: 10px; box-sizing: border-box; }
+    .cc-panel.active { display: block; }
+    .cc-panel[data-panel="chart"] { overflow: hidden; }
+    .cc-panel pre { margin: 0; padding: 16px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); font: 12px/1.6 ui-monospace, Menlo, monospace; overflow: auto; }
+    .cc-sql { position: relative; }
+    .cc-copy { position: absolute; top: 8px; right: 8px; padding: 3px 10px; border: 1px solid var(--line); border-radius: 4px; background: Canvas; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+    .cc-info p { margin: 0 0 9px; font-size: 14px; }
+    .cc-status { min-height: 18px; margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+    @media (max-width: 500px) { .chart-card-tools { right: 0; gap: 0; padding: 0 2px; } .chart-card-tools button { padding: 4px 6px; font-size: 11px; } }
+
+    .table-wrap { overflow-x: auto; }
+    table { border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+    th, td { border: 1px solid var(--line); padding: 4px 7px; text-align: right; white-space: nowrap; }
+    th { background: light-dark(#f3f4f6, #1f2937); font-weight: 600; }
+    th:first-child, td:first-child { text-align: left; position: sticky; left: 0; background: light-dark(#f3f4f6, #1f2937); }
+  </style>
+</head>
+<body>
+
+  <h1>Warehouse Credits Skyline</h1>
+  <p class="lede">Hourly warehouse credits for the week of Mon Nov 9 – Sun Nov 15, 2026, from <code>HTML_REPORTS_QS.DEMO.WAREHOUSE_CREDITS_HOURLY</code>. Each bar is one hour; height and color are credits used.</p>
+
+  <div class="kpis">
+    <div class="kpi"><div class="v">469.54</div><div class="l">credits this week</div></div>
+    <div class="kpi"><div class="v">387.98</div><div class="l">weekday credits (Mon–Fri)</div></div>
+    <div class="kpi"><div class="v">81.56</div><div class="l">weekend credits (Sat–Sun)</div></div>
+    <div class="kpi"><div class="v">6.00</div><div class="l">peak hour · Wed 09:00 &amp; Fri 08:00</div></div>
+  </div>
+
+  <h2 id="credits-skyline">Credits by day and hour</h2>
+  <div class="scale" aria-hidden="true"><span id="scale-min">0.84</span><span class="bar"></span><span id="scale-max">6.00</span><span>credits / hour</span></div>
+
+  <div class="chart-card">
+    <div class="chart-card-tools" role="group" aria-label="Chart views">
+      <button type="button" class="active" data-view="chart" aria-pressed="true">Chart</button>
+      <button type="button" data-view="sql" aria-pressed="false">SQL</button>
+      <button type="button" data-view="preview" aria-pressed="false">Preview</button>
+      <button type="button" data-view="info" aria-pressed="false">Info</button>
+    </div>
+    <div class="cc-panel active" data-panel="chart">
+      <div class="stage" id="stage">
+        <div class="tip" id="tip" hidden><div class="tip-day"></div><div class="tip-hour"></div><div class="tip-val"></div></div>
+        <div class="fallback" id="fallback" role="alert" hidden></div>
+      </div>
+    </div>
+    <div class="cc-panel" data-panel="sql">
+      <div class="cc-sql"><button type="button" class="cc-copy">Copy</button>
+<pre><code>SELECT DAY_NAME,
+       MIN(HOUR_START)::DATE AS DAY_DATE,
+       COUNT(*) AS N,
+       LISTAGG(TO_VARCHAR(CREDITS, 'FM90.00'), ',')
+         WITHIN GROUP (ORDER BY HOUR_OF_DAY) AS CREDITS_BY_HOUR,
+       SUM(CREDITS) AS DAY_TOTAL
+FROM HTML_REPORTS_QS.DEMO.WAREHOUSE_CREDITS_HOURLY
+GROUP BY DAY_NAME
+ORDER BY DAY_DATE</code></pre></div>
+    </div>
+    <div class="cc-panel" data-panel="preview">
+      <div class="table-wrap"><table id="preview"></table></div>
+    </div>
+    <div class="cc-panel cc-info" data-panel="info">
+      <p><strong>What this shows:</strong> Credits consumed in each of the 168 hours of one week. Columns run left to right from 00:00 to 23:00; rows run back to front from Monday to Sunday.</p>
+      <p><strong>Source:</strong> HTML_REPORTS_QS.DEMO.WAREHOUSE_CREDITS_HOURLY, all 168 rows (HOUR_START 2026-11-09 00:00 through 2026-11-15 23:00), no filters.</p>
+      <p><strong>How it was derived:</strong> One bar per row. Height is 1 scene unit per credit. Color is interpolated blue → teal → yellow → red between the week's lowest hour (0.84, Fri 00:00) and highest (6.00, Wed 09:00 and Fri 08:00).</p>
+      <p><strong>Pattern:</strong> Weekday business hours (08:00–18:59) never drop below 4.02 credits per hour, and usage falls sharply at 19:00. Weekends stay at or below 2.80 credits per hour all day.</p>
+      <p><strong>Caveat:</strong> This is a single week of demo data, so it doesn't show week-to-week variation. The warehouse(s) behind the totals aren't broken out in the table.</p>
+    </div>
+    <p class="cc-status" role="status" aria-live="polite"></p>
+  </div>
+  <p class="hint">Drag to orbit · hover or tap for values</p>
+
+  <script>
+  (function () {
+    var DATA = JSON.parse(document.getElementById("credits-data").textContent);
+    var ORDER = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    var days = ORDER.map(function (d) { return DATA.days.filter(function (x) { return x.day === d; })[0]; });
+
+    // Preview table: the same 7 x 24 values the chart draws
+    var table = document.getElementById("preview");
+    var thead = table.createTHead().insertRow();
+    ["Day", "Date"].concat(Array.from({ length: 24 }, function (_, h) { return String(h).padStart(2, "0"); }), ["Total"])
+      .forEach(function (t) { var th = document.createElement("th"); th.textContent = t; thead.appendChild(th); });
+    var tb = table.createTBody();
+    days.forEach(function (d) {
+      var tr = tb.insertRow();
+      [d.day, d.date].concat(d.credits.map(function (v) { return v.toFixed(2); }), [d.total.toFixed(2)])
+        .forEach(function (v) { tr.insertCell().textContent = v; });
+    });
+
+    // Fallbacks are shown from this classic script so they work even if the module never runs
+    var fallback = document.getElementById("fallback");
+    window.__skylineFallback = function (msg) {
+      fallback.textContent = msg || "3D rendering isn't available in this browser. WebGL may be turned off.";
+      fallback.hidden = false;
+      var c = document.querySelector("#stage canvas");
+      if (c) c.style.display = "none";
+    };
+    var ok = false;
+    try {
+      var probe = document.createElement("canvas");
+      var gl = window.WebGLRenderingContext && (probe.getContext("webgl2") || probe.getContext("webgl"));
+      ok = !!gl;
+      if (gl) { var lose = gl.getExtension("WEBGL_lose_context"); if (lose) lose.loseContext(); }
+    } catch (e) { ok = false; }
+    if (!ok) {
+      window.__skylineNoWebGL = true;
+      window.__skylineFallback();
+    } else {
+      setTimeout(function () {
+        if (!window.__skylineReady && fallback.hidden) window.__skylineFallback("The 3D library couldn't load, so the skyline can't be drawn. The Preview tab has the same numbers.");
+      }, 8000);
+    }
+
+    // Chart details menu
+    document.querySelectorAll(".chart-card").forEach(function (card) {
+      var buttons = card.querySelectorAll("[data-view]");
+      var status = card.querySelector(".cc-status");
+      buttons.forEach(function (button) {
+        button.addEventListener("click", function () {
+          buttons.forEach(function (b) {
+            b.classList.toggle("active", b === button);
+            b.setAttribute("aria-pressed", String(b === button));
+          });
+          card.querySelectorAll(".cc-panel").forEach(function (panel) {
+            panel.classList.toggle("active", panel.dataset.panel === button.dataset.view);
+          });
+          status.textContent = "";
+        });
+      });
+      var copy = card.querySelector(".cc-copy");
+      if (copy) copy.addEventListener("click", function () {
+        var declined = function () { status.textContent = "SQL was not copied. Select it and copy it manually."; };
+        status.textContent = "Confirm the copy in the dialog…";
+        try {
+          navigator.clipboard.writeText(card.querySelector(".cc-sql code").textContent)
+            .then(function () { status.textContent = "SQL copied."; }, declined);
+        } catch (e) { declined(); }
+      });
+    });
+  })();
+  </script>
+
+  <script type="module">
+  import * as THREE from '/libs/three@0.169.0/three.module.min.js';
+
+  const stage = document.getElementById('stage');
+  const tip = document.getElementById('tip');
+  const tipDay = tip.querySelector('.tip-day');
+  const tipHour = tip.querySelector('.tip-hour');
+  const tipVal = tip.querySelector('.tip-val');
+
+  const DATA = JSON.parse(document.getElementById('credits-data').textContent);
+  const ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const COLS = 24, ROWS = 7, SX = 1, SZ = 1.15, HS = 1;   // spacing and height per credit
+  const PHI_MIN = 0.28, PHI_MAX = 1.36;                    // polar limits: never at or below the floor
+  const IDLE_MS = 1500, SPIN = 0.14;                       // auto-rotate after 1.5s idle, rad/s
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const fmtDate = (iso) => { const p = iso.split('-'); return MONTHS[Number(p[1]) - 1] + ' ' + Number(p[2]); };
+
+  function main() {
+    if (window.__skylineNoWebGL) return;
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    } catch (e) {
+      window.__skylineFallback();
+      return;
+    }
+    window.__skylineReady = true;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setClearColor(0x000000, 0);
+    const el = renderer.domElement;
+    el.tabIndex = 0;
+    el.setAttribute('role', 'img');
+    el.setAttribute('aria-label', '3D bar chart of hourly warehouse credits, 24 hours by 7 days. Weekday business hours run 4 to 6 credits per hour; nights and weekends stay under 2.8. Arrow keys orbit the view.');
+    stage.insertBefore(el, tip);
+    el.addEventListener('webglcontextlost', (e) => { e.preventDefault(); window.__skylineFallback(); });
+
+    const days = ORDER.map((d) => DATA.days.find((x) => x.day === d));
+    const all = days.flatMap((d) => d.credits);
+    const vMin = Math.min(...all), vMax = Math.max(...all);
+
+    const STOPS = ['#2563eb', '#14b8a6', '#facc15', '#ef4444'].map((c) => new THREE.Color(c));
+    function colorFor(v) {
+      const s = ((v - vMin) / (vMax - vMin || 1)) * (STOPS.length - 1);
+      const i = Math.min(STOPS.length - 2, Math.floor(s));
+      return STOPS[i].clone().lerp(STOPS[i + 1], s - i);
+    }
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 300);
+    const target = new THREE.Vector3(0, 1.6, 0);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x8090a0, 1.4));
+    const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+    sun.position.set(-8, 18, 12);
+    scene.add(sun);
+    const fill = new THREE.DirectionalLight(0xffffff, 0.6);
+    fill.position.set(10, 6, -10);
+    scene.add(fill);
+
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 1 });
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(COLS * SX + 1.2, ROWS * SZ + 1.0), floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    scene.add(floor);
+
+    // Bars: base sits on the floor so scaling Y grows them upward
+    const geo = new THREE.BoxGeometry(0.8, 1, 0.8);
+    geo.translate(0, 0.5, 0);
+    const bars = [];
+    days.forEach((d, r) => d.credits.forEach((v, h) => {
+      const base = colorFor(v);
+      const mat = new THREE.MeshStandardMaterial({ color: base, roughness: 0.55, metalness: 0.05 });
+      const m = new THREE.Mesh(geo, mat);
+      m.position.set((h - (COLS - 1) / 2) * SX, 0, (r - (ROWS - 1) / 2) * SZ);
+      const tgt = v * HS;
+      m.scale.y = reduceMotion ? tgt : 0.001;
+      m.userData = { day: d.day, date: d.date, hour: h, credits: v, target: tgt, base, delay: 250 + h * 22 + r * 70 };
+      scene.add(m);
+      bars.push(m);
+    }));
+
+    // Axis labels as camera-facing sprites (redrawn when the color scheme changes)
+    const labels = [];
+    function addLabel(text, x, z, anchorX) {
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false }));
+      sprite.position.set(x, 0.05, z);
+      sprite.center.set(anchorX, 0.5);
+      scene.add(sprite);
+      labels.push({ sprite, text });
+    }
+    days.forEach((d, r) => addLabel(d.day, -((COLS - 1) / 2) * SX - 0.9, (r - (ROWS - 1) / 2) * SZ, 1));
+    for (let h = 0; h < COLS; h += 3) addLabel(pad2(h) + ':00', (h - (COLS - 1) / 2) * SX, ((ROWS - 1) / 2) * SZ + 1.15, 0.5);
+
+    function drawLabels(color) {
+      labels.forEach((l) => {
+        const c = document.createElement('canvas');
+        const ctx = c.getContext('2d');
+        const font = '600 44px -apple-system, system-ui, sans-serif';
+        ctx.font = font;
+        c.width = Math.ceil(ctx.measureText(l.text).width) + 12;
+        c.height = 60;
+        ctx.font = font;
+        ctx.fillStyle = color;
+        ctx.textBaseline = 'middle';
+        ctx.fillText(l.text, 6, 31);
+        const tex = new THREE.CanvasTexture(c);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        if (l.sprite.material.map) l.sprite.material.map.dispose();
+        l.sprite.material.map = tex;
+        l.sprite.material.needsUpdate = true;
+        const size = 0.55;
+        l.sprite.scale.set((c.width / c.height) * size, size, 1);
+      });
+    }
+
+    // Theme: read the resolved text color so it follows light-dark() however the viewer sets it
+    function isDark() {
+      const m = (getComputedStyle(stage).color.match(/[\d.]+/g) || []).map(Number);
+      if (m.length < 3) return matchMedia('(prefers-color-scheme: dark)').matches;
+      const k = m[0] <= 1 && m[1] <= 1 && m[2] <= 1 ? 255 : 1;
+      return (0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]) * k > 128;
+    }
+    function applyTheme() {
+      const dark = isDark();
+      floorMat.color.set(dark ? 0x1e293b : 0xdbe3ec);
+      drawLabels(dark ? '#cbd5e1' : '#475569');
+    }
+    applyTheme();
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+
+    // Orbit state (spherical coordinates around target)
+    let theta = -0.5, phi = 1.0, radius = 0, targetRadius = 0;
+    function fitRadius(aspect) {
+      // Distance that keeps the whole grid (plus labels) in frame; narrow screens pull back further
+      const tv = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+      const th = tv * aspect;
+      return Math.max(14 / th, 6.5 / tv) + 4;
+    }
+    function updateCamera() {
+      const s = Math.sin(phi);
+      camera.position.set(
+        target.x + radius * s * Math.sin(theta),
+        target.y + radius * Math.cos(phi),
+        target.z + radius * s * Math.cos(theta));
+      camera.lookAt(target);
+    }
+
+    function resize() {
+      const w = stage.clientWidth, h = stage.clientHeight;
+      if (!w || !h) return;                       // panel hidden
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      targetRadius = fitRadius(camera.aspect);
+      if (!radius) radius = reduceMotion ? targetRadius : targetRadius * 1.12;
+    }
+    new ResizeObserver(resize).observe(stage);
+    resize();
+
+    let visible = true;
+    new IntersectionObserver((entries) => { visible = entries[0].isIntersecting; }).observe(stage);
+
+    // Hover / tap picking
+    const raycaster = new THREE.Raycaster();
+    const ndc = new THREE.Vector2();
+    let hoverBar = null;
+    const pointer = { inside: false, x: 0, y: 0 };
+
+    function setHover(bar, px, py) {
+      if (bar !== hoverBar) {
+        if (hoverBar) hoverBar.material.emissive.setRGB(0, 0, 0);
+        hoverBar = bar;
+        if (bar) {
+          const u = bar.userData;
+          lastInteraction = performance.now();      // inspecting a bar also restarts the idle timer
+          bar.material.emissive.copy(u.base).multiplyScalar(0.45);
+          tipDay.textContent = u.day + ' · ' + fmtDate(u.date);
+          tipHour.textContent = pad2(u.hour) + ':00–' + pad2(u.hour + 1) + ':00';
+          tipVal.textContent = u.credits.toFixed(2) + ' credits';
+        }
+      }
+      if (!bar) { tip.hidden = true; return; }
+      tip.hidden = false;
+      const sw = stage.clientWidth, tw = tip.offsetWidth, thh = tip.offsetHeight;
+      let left = px + 14;
+      if (left + tw > sw - 6) left = px - tw - 14;
+      tip.style.transform = 'translate(' + Math.round(clamp(left, 6, sw - tw - 6)) + 'px,' + Math.round(Math.max(6, py - thh - 12)) + 'px)';
+    }
+    function pick(clientX, clientY) {
+      const rect = el.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      ndc.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
+      raycaster.setFromCamera(ndc, camera);
+      const hit = raycaster.intersectObjects(bars, false)[0];
+      setHover(hit ? hit.object : null, clientX - rect.left, clientY - rect.top);
+    }
+
+    // Drag to orbit (pointer events cover mouse, pen, and touch)
+    let dragging = false, moved = false, downX = 0, downY = 0, lastX = 0, lastY = 0;
+    let lastInteraction = performance.now();
+    el.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      dragging = true; moved = false;
+      downX = lastX = e.clientX; downY = lastY = e.clientY;
+      el.setPointerCapture(e.pointerId);
+      lastInteraction = performance.now();
+      stage.classList.add('dragging');
+    });
+    el.addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'touch') { pointer.inside = true; pointer.x = e.clientX; pointer.y = e.clientY; }
+      if (!dragging) { if (e.pointerType !== 'touch') pick(e.clientX, e.clientY); return; }
+      const dx = e.clientX - lastX, dy = e.clientY - lastY;
+      lastX = e.clientX; lastY = e.clientY;
+      if (!moved && Math.abs(e.clientX - downX) + Math.abs(e.clientY - downY) > 4) { moved = true; setHover(null); }
+      if (!moved) return;
+      const k = (2 * Math.PI / Math.max(300, el.clientHeight)) * 0.75;
+      theta -= dx * k;
+      phi = clamp(phi - dy * k, PHI_MIN, PHI_MAX);
+      lastInteraction = performance.now();
+    });
+    function endDrag(e) {
+      if (!dragging) return;
+      dragging = false;
+      stage.classList.remove('dragging');
+      lastInteraction = performance.now();
+      if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+      if (!moved && e.type === 'pointerup') pick(e.clientX, e.clientY);   // tap to inspect on touch
+    }
+    el.addEventListener('pointerup', endDrag);
+    el.addEventListener('pointercancel', endDrag);
+    el.addEventListener('pointerleave', (e) => {
+      if (e.pointerType === 'touch') return;
+      pointer.inside = false;
+      if (!dragging) setHover(null);
+    });
+    el.addEventListener('keydown', (e) => {
+      const step = 0.12;
+      if (e.key === 'ArrowLeft') theta += step;
+      else if (e.key === 'ArrowRight') theta -= step;
+      else if (e.key === 'ArrowUp') phi = clamp(phi - step, PHI_MIN, PHI_MAX);
+      else if (e.key === 'ArrowDown') phi = clamp(phi + step, PHI_MIN, PHI_MAX);
+      else return;
+      e.preventDefault();
+      setHover(null);
+      lastInteraction = performance.now();
+    });
+
+    // Render loop
+    const t0 = performance.now();
+    let prev = t0, spin = 0;
+    function frame(now) {
+      requestAnimationFrame(frame);
+      const dt = Math.min(0.05, Math.max(0, (now - prev) / 1000));
+      prev = now;
+      if (!visible || !stage.clientWidth) return;
+
+      // Bars ease from zero toward their height, staggered across the grid
+      const elapsed = now - t0;
+      const ease = 1 - Math.exp(-dt * 4.5);
+      for (const b of bars) {
+        const u = b.userData;
+        if (elapsed < u.delay || b.scale.y === u.target) continue;
+        const next = b.scale.y + (u.target - b.scale.y) * ease;
+        b.scale.y = Math.abs(u.target - next) < 0.002 ? u.target : next;
+      }
+
+      // Idle auto-rotate: starts ~1.5s after the last drag, pauses while a bar is inspected
+      const idle = !reduceMotion && !dragging && !hoverBar && now - lastInteraction > IDLE_MS;
+      // Ease in gently when idle; freeze at once on drag or hover so nothing drifts under the user
+      if (dragging || hoverBar) spin = 0;
+      else spin += ((idle ? SPIN : 0) - spin) * (1 - Math.exp(-dt * 2.5));
+      theta += spin * dt;
+      radius += (targetRadius - radius) * (1 - Math.exp(-dt * 4));
+      if (Math.abs(targetRadius - radius) < 0.005) radius = targetRadius;
+      updateCamera();
+
+      // Keep hover accurate when bars move under a still mouse
+      if (pointer.inside && !dragging) pick(pointer.x, pointer.y);
+      renderer.render(scene, camera);
+    }
+    updateCamera();
+    requestAnimationFrame(frame);
+  }
+
+  main();
+  </script>
+</body>
+</html>

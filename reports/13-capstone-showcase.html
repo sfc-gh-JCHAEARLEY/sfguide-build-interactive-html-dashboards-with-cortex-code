@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="snowflake-source" content="cortex-agent-authored">
+<title>What you can build with HTML reports</title>
+<script type="application/json" id="snowflake-report-metadata">{
+ "generated": "2026-11-17",
+ "intent": "Long-form showcase of what HTML reports can do: hero, sticky scroll-spy nav, Q3 revenue example, count-up stats, seven tabbed library demos, and tips.",
+ "dataSources": [
+  {
+   "type": "table",
+   "name": "HTML_REPORTS_QS.DEMO.SALES"
+  },
+  {
+   "type": "table",
+   "name": "HTML_REPORTS_QS.DEMO.WEEKLY_ACTIVE_USERS"
+  },
+  {
+   "type": "table",
+   "name": "HTML_REPORTS_QS.DEMO.QUERY_LOG"
+  },
+  {
+   "type": "table",
+   "name": "HTML_REPORTS_QS.DEMO.WAREHOUSE_CREDITS_HOURLY"
+  },
+  {
+   "type": "table",
+   "name": "HTML_REPORTS_QS.DEMO.OBJECT_DEPENDENCIES"
+  }
+ ],
+ "sections": [
+  {
+   "id": "examples",
+   "title": "Examples: Q3 FY26 revenue review",
+   "dataSources": [
+    {
+     "type": "query",
+     "sql": "SELECT ROUND(SUM(revenue_usd), 2) AS total_revenue, COUNT(*) AS order_count, ROUND(AVG(revenue_usd), 2) AS avg_order_value FROM HTML_REPORTS_QS.DEMO.SALES WHERE order_date BETWEEN '2026-07-01' AND '2026-09-30'"
+    },
+    {
+     "type": "query",
+     "sql": "SELECT region, ROUND(SUM(revenue_usd), 2) AS revenue, COUNT(*) AS orders FROM HTML_REPORTS_QS.DEMO.SALES WHERE order_date BETWEEN '2026-07-01' AND '2026-09-30' GROUP BY region ORDER BY revenue DESC"
+    }
+   ],
+   "producerNotes": "KPI values are inlined in data-count attributes and the visible text; top region = first row of the region query. Region bars come from #report-data.regions. Date range Jul 1 to Sep 30, 2026, matching the guide's first report."
+  },
+  {
+   "id": "showcase",
+   "title": "Showcase stats and tabbed demos",
+   "producerNotes": "Stats 9/3/2/0 are fixed values from the prompt (9 counts Vega, Vega-Lite and Vega-Embed as one library). They count up once, the first time the row is 40% in view (IntersectionObserver); reduced motion shows final values. Each tab renders lazily on first view."
+  },
+  {
+   "id": "panel-charts",
+   "title": "Charts: weekly active users (Chart.js)",
+   "dataSources": [
+    {
+     "type": "query",
+     "sql": "SELECT week_start, active_users FROM HTML_REPORTS_QS.DEMO.WEEKLY_ACTIVE_USERS ORDER BY week_start"
+    }
+   ],
+   "producerNotes": "All 52 rows embedded as #report-data.wau. Randomize resamples client-side with a seeded PRNG and is labeled as demo data."
+  },
+  {
+   "id": "panel-linked",
+   "title": "Linked views: brush cross-filter (Vega-Lite)",
+   "dataSources": [
+    {
+     "type": "query",
+     "sql": "SELECT warehouse_size, query_type, rows_scanned, duration_ms FROM HTML_REPORTS_QS.DEMO.QUERY_LOG WHERE duration_ms > 0 QUALIFY MOD(ROW_NUMBER() OVER (ORDER BY rows_scanned, duration_ms, warehouse_size, query_type), 5) = 0"
+    }
+   ],
+   "producerNotes": "Deterministic 1-in-5 systematic sample: 399 of the 1,995 rows with duration_ms > 0 (5 zero-duration rows of 2,000 are excluded because they can't sit on a log axis). Embedded as #report-data.qlog [sizeIdx, typeIdx, rows_scanned, duration_ms] with size order X-Small,Small,Medium,Large and type order SELECT,INSERT,MERGE,CREATE TABLE AS."
+  },
+  {
+   "id": "panel-network",
+   "title": "Network: object dependencies (D3)",
+   "dataSources": [
+    {
+     "type": "query",
+     "sql": "SELECT source_name, source_type, target_name, target_type FROM HTML_REPORTS_QS.DEMO.OBJECT_DEPENDENCIES"
+    }
+   ],
+   "producerNotes": "All 11 edges embedded as #report-data.deps."
+  },
+  {
+   "id": "panel-3d",
+   "title": "3D: hourly warehouse credits (Three.js)",
+   "dataSources": [
+    {
+     "type": "query",
+     "sql": "SELECT day_name, hour_of_day, credits FROM HTML_REPORTS_QS.DEMO.WAREHOUSE_CREDITS_HOURLY ORDER BY hour_start"
+    }
+   ],
+   "producerNotes": "168 rows embedded as #report-data.credits (days x 24 hourly values, Nov 9-15, 2026). Caption stats are computed in the page."
+  },
+  {
+   "id": "panel-diagrams",
+   "title": "Diagrams (Mermaid)",
+   "producerNotes": "Static diagram text; no data source."
+  },
+  {
+   "id": "panel-math",
+   "title": "Math (KaTeX)",
+   "producerNotes": "Live editor; no data source."
+  },
+  {
+   "id": "panel-markdown",
+   "title": "Markdown (Marked + highlight.js)",
+   "producerNotes": "Live editor; sample README uses the Q3 region totals from the region query. Output passes an allowlist sanitizer."
+  },
+  {
+   "id": "tips",
+   "title": "Tips",
+   "producerNotes": "Static guidance text."
+  }
+ ]
+}</script>
+<script type="application/json" id="report-data">{"kpi":{"revenue":127325282.93,"orders":5047,"aov":25227.91},"regions":[{"region":"APAC","revenue":34341682.91,"orders":1356},{"region":"LATAM","revenue":33313277.85,"orders":1294},{"region":"North America","revenue":30421661.78,"orders":1199},{"region":"EMEA","revenue":29248660.39,"orders":1198}],"wau":[["2025-11-03",1173],["2025-11-10",1128],["2025-11-17",1233],["2025-11-24",1345],["2025-12-01",1348],["2025-12-08",1282],["2025-12-15",1454],["2025-12-22",1426],["2025-12-29",1493],["2026-01-05",1589],["2026-01-12",1500],["2026-01-19",1504],["2026-01-26",1616],["2026-02-02",1586],["2026-02-09",1757],["2026-02-16",1641],["2026-02-23",1753],["2026-03-02",1876],["2026-03-09",1814],["2026-03-16",1896],["2026-03-23",1793],["2026-03-30",2034],["2026-04-06",1892],["2026-04-13",1970],["2026-04-20",2040],["2026-04-27",2145],["2026-05-04",2104],["2026-05-11",2032],["2026-05-18",2278],["2026-05-25",2307],["2026-06-01",2327],["2026-06-08",2280],["2026-06-15",2394],["2026-06-22",2347],["2026-06-29",2351],["2026-07-06",2502],["2026-07-13",2383],["2026-07-20",2474],["2026-07-27",2516],["2026-08-03",2624],["2026-08-10",2686],["2026-08-17",2739],["2026-08-24",2612],["2026-08-31",2762],["2026-09-07",2825],["2026-09-14",2802],["2026-09-21",2761],["2026-09-28",2727],["2026-10-05",2792],["2026-10-12",2878],["2026-10-19",2848],["2026-10-26",3063]],"qlog":[[2,1,1047,1],[3,1,1072,1],[2,0,1096,1],[3,2,1122,1],[0,2,1148,3],[0,1,1175,3],[0,1,1202,6],[0,3,1230,7],[1,0,1349,2],[2,2,1413,1],[3,2,1445,1],[1,1,1445,4],[2,2,1549,3],[3,2,1585,1],[1,2,1622,3],[2,2,1698,2],[3,0,1778,1],[1,0,1820,2],[3,1,1862,1],[2,2,1950,1],[2,3,1995,2],[3,1,2042,1],[1,1,2138,3],[0,0,2138,10],[1,3,2239,4],[1,1,2291,8],[2,0,2399,3],[3,2,2512,2],[2,2,2630,2],[1,0,2754,5],[2,2,2818,4],[3,1,2951,1],[3,2,3020,1],[0,1,3090,8],[0,2,3162,22],[2,3,3311,5],[0,1,3388,22],[0,2,3467,19],[1,3,3631,11],[2,2,3802,7],[2,1,4074,5],[3,1,4266,1],[2,3,4365,4],[2,0,4467,7],[2,1,4571,7],[3,1,4677,3],[0,2,4786,17],[1,2,5012,18],[0,2,5129,27],[0,0,5370,32],[2,0,5754,6],[2,3,6026,9],[0,1,6166,40],[1,1,6457,9],[3,1,6918,4],[0,0,7079,27],[0,1,7244,30],[2,1,7762,8],[0,0,7943,41],[0,1,8318,21],[3,3,8710,3],[2,2,8710,15],[3,1,9120,8],[2,1,9333,11],[1,2,9550,34],[3,1,10000,7],[3,0,10233,8],[3,1,10471,6],[1,0,10715,22],[3,3,11482,7],[3,2,12023,5],[1,1,12023,36],[2,2,12882,23],[2,1,13183,18],[2,3,13804,22],[3,2,14125,10],[0,1,14454,49],[0,2,14791,40],[1,1,15136,25],[0,1,15849,58],[3,0,16982,7],[1,3,17378,30],[2,0,17783,22],[0,3,18197,103],[3,0,19055,16],[3,2,19953,9],[2,3,20893,16],[0,3,21380,71],[1,0,22387,67],[1,2,23442,60],[3,2,24547,22],[0,3,24547,74],[0,0,25119,166],[1,1,26915,39],[1,0,27542,70],[0,1,28184,210],[3,1,30200,26],[2,3,31623,26],[2,1,33113,33],[3,2,33884,27],[3,1,35481,19],[0,2,35481,248],[2,1,38905,59],[3,2,39811,14],[3,3,41687,20],[2,3,42658,61],[1,2,43652,108],[3,2,44668,28],[3,3,45709,31],[0,1,45709,331],[2,0,48978,48],[0,1,50119,361],[3,0,52481,44],[3,2,54954,34],[0,3,54954,365],[0,2,58884,188],[3,0,61660,27],[0,2,61660,216],[3,0,64565,42],[1,0,66069,155],[0,1,67608,240],[2,1,70795,85],[0,3,72444,431],[0,2,74131,248],[3,0,75858,70],[0,3,81283,260],[1,0,83176,260],[3,0,85114,73],[2,3,87096,60],[3,2,89125,80],[0,3,89125,553],[1,0,95499,291],[3,3,100000,56],[0,1,107152,343],[2,1,112202,210],[1,0,114815,330],[3,1,120226,58],[1,3,120226,436],[2,0,123027,188],[1,3,125893,290],[3,0,128825,42],[0,2,131826,771],[3,1,141254,72],[3,1,144544,111],[2,0,154882,106],[3,0,158489,65],[2,2,165959,118],[1,0,169824,344],[2,0,173780,235],[0,2,190546,581],[1,2,199526,539],[1,1,204174,439],[0,2,208930,1139],[0,0,218776,842],[2,3,234423,179],[2,1,239883,366],[3,2,245471,143],[3,1,257040,111],[1,2,263027,776],[0,0,269153,767],[3,2,281838,233],[1,3,309030,742],[2,2,331131,331],[2,1,338844,585],[1,3,346737,659],[1,0,363078,1135],[0,1,371535,1765],[1,3,389045,1410],[0,2,398107,2209],[3,2,436516,262],[2,2,446684,547],[0,2,467735,1684],[2,0,501187,520],[2,3,512861,494],[0,3,524807,3333],[3,1,549541,402],[2,1,562341,851],[0,3,575440,2043],[0,1,588844,2915],[1,3,616595,1850],[3,0,630957,544],[1,3,630957,2287],[2,0,645654,960],[3,3,676083,325],[0,3,691831,2352],[3,1,724436,367],[0,2,724436,2354],[3,3,776247,611],[0,1,794328,4289],[2,3,851138,532],[1,1,851138,2447],[0,3,891251,6105],[0,3,933254,5086],[1,3,977237,2712],[0,1,1047129,3927],[0,0,1096478,4112],[2,3,1148154,2110],[2,2,1174898,1292],[3,3,1202264,421],[1,2,1230269,1569],[0,1,1258925,5854],[1,2,1288250,1804],[0,1,1318257,9162],[0,2,1348963,7824],[0,0,1380384,9663],[0,2,1445440,8817],[1,1,1513561,3065],[1,0,1584893,4240],[0,2,1659587,10123],[2,0,1737801,1673],[3,3,1862087,1141],[3,2,1905461,1286],[3,1,1949845,1267],[3,1,2041738,1404],[3,2,2089296,1280],[2,3,2187762,3090],[2,1,2290868,2005],[2,0,2344229,2813],[0,2,2398833,11035],[1,3,2511886,8792],[3,1,2630268,1085],[1,0,2691535,3634],[0,1,2754229,6886],[0,2,2818383,17051],[1,3,2951209,4574],[1,3,3090295,10816],[1,0,3235937,8575],[2,2,3388442,3516],[3,0,3548134,2284],[3,2,3630781,2065],[3,2,3801894,3184],[3,1,3981072,1891],[0,1,4073803,10796],[0,3,4265795,24742],[1,0,4466836,13401],[0,0,4570882,18741],[1,1,4677351,12746],[2,1,4786301,7239],[2,1,5011872,6453],[1,0,5128614,14745],[1,1,5248075,11415],[2,0,5495409,5427],[1,2,5623413,13215],[3,3,5754399,3632],[3,3,6165950,3661],[2,0,6309573,10569],[2,1,6456542,6457],[3,0,6606934,2973],[0,3,6606934,39311],[0,3,6760830,45974],[0,3,7079458,30088],[0,2,7244360,53608],[2,2,7585776,13370],[3,1,7943282,2631],[2,3,8128305,11583],[3,3,8317638,2807],[3,3,8709636,6206],[2,3,8912509,6239],[0,2,8912509,28074],[3,1,9332543,4666],[2,3,9772372,15147],[0,3,10000000,32500],[3,2,10471285,4385],[3,3,10715193,9309],[2,3,10964782,19874],[1,3,11220185,42076],[3,0,11748976,4993],[3,1,12302688,7382],[3,2,12882496,8937],[1,0,13182567,35593],[2,0,13803843,8627],[0,1,14125375,74864],[3,1,14791084,11925],[0,1,14791084,108714],[2,2,15488166,25168],[2,1,16218101,10947],[2,0,16982437,30144],[1,2,17378008,52134],[2,3,18197009,32527],[0,2,18620871,78208],[1,2,19054607,69073],[1,2,19498446,36560],[1,0,19952623,36912],[0,0,20417379,70440],[2,1,21877616,24886],[2,0,22908677,37227],[2,1,23988329,18591],[3,0,25118864,14129],[2,3,25703958,36307],[2,1,26302680,18741],[0,0,26302680,109156],[1,3,27542287,101218],[3,1,28183829,16734],[1,2,28840315,74264],[3,3,29512092,24347],[1,2,30902954,40174],[0,2,30902954,188508],[1,3,33113112,95200],[2,0,33884416,28378],[2,3,34673685,42042],[2,0,35481339,23950],[2,3,36307805,32223],[2,3,37153523,44584],[1,3,38018940,54177],[1,0,38904514,137138],[3,0,41686938,27878],[1,0,42657952,130107],[3,0,43651583,35194],[0,3,44668359,178673],[1,3,46773514,86531],[1,2,48977882,121220],[2,3,50118723,39468],[1,0,51286138,71801],[2,2,53703180,37592],[2,1,54954087,76936],[3,0,57543994,23018],[3,1,58884366,19137],[1,3,58884366,217872],[1,1,61659500,166481],[1,2,63095734,115150],[2,1,64565423,79093],[3,2,66069345,61527],[0,1,67608298,277194],[2,0,70794578,131855],[2,1,72443596,123154],[2,0,74131024,107490],[3,0,77624712,56763],[3,1,79432823,54610],[0,2,81283052,487698],[0,1,83176377,494899],[3,3,87096359,48447],[0,3,89125094,285200],[3,2,91201084,70111],[2,1,93325430,106158],[1,2,95499259,334247],[2,1,102329299,117679],[2,0,104712855,102095],[3,0,112201845,76438],[1,0,112201845,342216],[3,2,125892541,84191],[2,3,131825674,125234],[0,1,134896288,816123],[0,0,138038426,379606],[0,2,144543977,708265],[2,1,151356125,213791],[0,2,154881662,511109],[2,0,158489319,128773],[1,1,162181010,352744],[0,3,165958691,1111923],[0,3,169824365,1248209],[1,1,177827941,666855],[1,0,186208714,302589],[0,1,186208714,986906],[0,0,190546072,1400514],[2,3,199526231,147151],[2,0,204173794,334335],[0,1,208929613,564110],[2,3,218776162,404736],[0,0,223872114,1231297],[0,2,234422882,644663],[0,1,239883292,1151440],[2,2,251188643,445860],[2,3,263026799,226861],[2,1,275422870,420020],[0,3,281838293,1324640],[0,2,295120923,1018167],[0,0,301995172,1449577],[3,3,316227766,187760],[0,0,331131121,1556316],[3,2,346736850,153864],[2,3,354813389,270545],[3,2,371535229,308839],[3,1,389045145,296647],[3,2,407380278,165498],[0,2,416869383,1604947],[0,0,426579519,1578344],[3,3,446683592,231717],[1,3,478630092,1005123],[0,2,501187234,2280402],[2,3,524807460,708490],[0,1,537031796,3947184],[3,0,562341325,312802],[0,1,562341325,1518322],[3,1,588843655,316503],[0,2,616595002,3915378],[0,0,630957344,1608941],[3,0,645654229,532665],[0,2,645654229,4551862],[2,3,676082975,853555],[2,3,691830971,518873],[2,1,724435960,1041377],[2,1,741310241,1111965],[0,3,776247117,2251117],[3,2,812830516,533420],[0,0,831763771,2120998],[3,2,870963590,696771],[2,1,912010839,1607419],[1,3,933254301,1679858],[3,3,977237221,812328]],"credits":{"days":["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],"values":[[2.36,2.58,2.66,1.0,1.5,2.26,1.48,0.88,4.42,4.02,4.24,4.72,4.3,5.2,5.0,5.04,4.2,4.28,5.24,0.98,1.18,1.66,1.4,2.4],[1.28,1.28,1.24,0.96,1.52,1.86,1.46,2.74,4.02,4.7,5.98,5.2,4.9,5.8,5.06,5.96,4.7,5.64,5.9,2.1,2.06,1.66,0.86,0.98],[1.26,2.34,1.34,1.74,2.5,2.68,1.3,2.18,5.02,6.0,4.74,4.18,4.06,5.8,5.26,4.62,5.52,5.86,5.62,1.04,2.64,1.36,1.64,1.1],[1.08,2.38,1.36,1.26,2.36,2.8,2.3,1.6,4.4,4.16,5.42,4.96,5.06,4.02,5.02,4.04,5.12,4.3,5.78,2.24,2.3,2.8,2.7,0.96],[0.84,1.44,2.36,2.36,2.54,1.44,2.4,2.76,6.0,4.48,4.7,5.06,5.62,4.7,4.1,4.74,5.96,4.64,5.06,1.76,1.76,1.02,1.4,1.76],[1.06,1.74,1.12,1.06,1.16,1.9,1.04,1.14,1.18,0.9,1.06,2.34,1.44,1.84,1.48,2.08,1.32,2.04,2.3,1.6,2.2,2.8,1.6,2.66],[1.34,1.82,1.14,1.08,2.78,1.14,2.54,1.74,1.32,1.34,2.56,2.72,2.68,1.7,2.22,0.9,1.28,1.34,1.46,1.98,2.74,1.58,1.52,1.58]]},"deps":[{"s":"RAW.ORDERS","st":"Source table","t":"Q3 Revenue Report","tt":"Report"},{"s":"RAW.CUSTOMERS","st":"Source table","t":"Q3 Revenue Report","tt":"Report"},{"s":"RAW.PIPELINE","st":"Source table","t":"Pipeline Review","tt":"Report"},{"s":"RAW.CUSTOMERS","st":"Source table","t":"Pipeline Review","tt":"Report"},{"s":"Q3 Revenue Report","st":"Report","t":"SALES_LEADERSHIP","tt":"Role"},{"s":"Q3 Revenue Report","st":"Report","t":"FINANCE_ANALYST","tt":"Role"},{"s":"Pipeline Review","st":"Report","t":"SALES_LEADERSHIP","tt":"Role"},{"s":"Pipeline Review","st":"Report","t":"Jordan Patel","tt":"User"},{"s":"SALES_LEADERSHIP","st":"Role","t":"Avery Chen","tt":"User"},{"s":"SALES_LEADERSHIP","st":"Role","t":"Sam Rivera","tt":"User"},{"s":"FINANCE_ANALYST","st":"Role","t":"Priya Nair","tt":"User"}]}</script>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg:        light-dark(#f8fafc, #0f172a);
+    --surface:   light-dark(#ffffff, #1e293b);
+    --surface2:  light-dark(#f1f5f9, #172338);
+    --border:    light-dark(#e2e8f0, #334155);
+    --text:      light-dark(#1e293b, #e2e8f0);
+    --heading:   light-dark(#0f172a, #f8fafc);
+    --muted:     light-dark(#64748b, #94a3b8);
+    --accent:    light-dark(#0284c7, #38bdf8);
+    --accent-bg: light-dark(#e0f2fe, #0c2a3f);
+    --purple:    light-dark(#7c3aed, #a78bfa);
+    --green:     light-dark(#15803d, #4ade80);
+    --amber:     light-dark(#b45309, #fbbf24);
+    --rose:      light-dark(#e11d48, #fb7185);
+    --shadow:    light-dark(0 1px 3px rgba(15,23,42,.08), 0 1px 6px rgba(0,0,0,.45));
+    --shadow-lg: light-dark(0 10px 30px rgba(15,23,42,.10), 0 10px 30px rgba(0,0,0,.5));
+    --nav-h: 52px;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    padding-bottom: 64px;
+  }
+  img, svg { max-width: 100%; height: auto; }
+  a { color: var(--accent); }
+  h1, h2, h3 { color: var(--heading); line-height: 1.2; margin: 0 0 8px; }
+  h2 { font-size: clamp(22px, 3vw, 30px); font-weight: 750; letter-spacing: -.02em; margin-bottom: 10px; }
+  h3 { font-size: 17px; font-weight: 650; }
+  p { margin: 0 0 14px; }
+  code { font-family: var(--mono); font-size: .88em; background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px; }
+  button { font: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* nav */
+  #site-nav {
+    position: sticky; top: 0; z-index: 50; height: var(--nav-h);
+    display: flex; align-items: center; gap: 6px; padding: 0 clamp(12px, 3vw, 24px);
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: saturate(1.4) blur(8px); -webkit-backdrop-filter: saturate(1.4) blur(8px);
+    border-bottom: 1px solid var(--border); box-shadow: var(--shadow);
+  }
+  .nav-brand { font-size: 13px; font-weight: 800; color: var(--heading); text-decoration: none; white-space: nowrap; padding-right: 12px; margin-right: 4px; border-right: 1px solid var(--border); }
+  .nav-links { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; min-width: 0; }
+  .nav-link { font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: none; padding: 6px 12px; border-radius: 8px; white-space: nowrap; transition: background .15s, color .15s; }
+  .nav-link:hover { background: var(--surface2); color: var(--text); }
+  .nav-link.active { background: var(--accent-bg); color: var(--accent); }
+  @media (max-width: 420px) { .nav-brand { display: none; } }
+  section[id], header[id] { scroll-margin-top: calc(var(--nav-h) + 12px); }
+
+  /* hero */
+  .hero {
+    position: relative; overflow: hidden; color: #fff; text-align: center;
+    padding: clamp(48px, 9vw, 84px) 20px clamp(44px, 8vw, 72px);
+    background: linear-gradient(135deg, light-dark(#0369a1, #0b1a2e) 0%, light-dark(#0ea5e9, #1e3a5f) 52%, light-dark(#7c3aed, #2d1b69) 100%);
+  }
+  .hero::before { content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at 25% 70%, rgba(255,255,255,.10), transparent 60%), radial-gradient(ellipse at 75% 15%, rgba(255,255,255,.07), transparent 50%); }
+  .hero > * { position: relative; }
+  .hero-badge { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 4px 14px; border-radius: 999px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.28); margin-bottom: 18px; }
+  .hero h1 { color: #fff; font-size: clamp(30px, 5.5vw, 54px); font-weight: 800; letter-spacing: -.025em; margin-bottom: 14px; }
+  .hero-pitch { font-size: clamp(16px, 2.1vw, 20px); opacity: .9; max-width: 640px; margin: 0 auto 26px; }
+  .hero-chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .chip { font-size: 14px; font-weight: 550; padding: 6px 16px; border-radius: 999px; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.22); }
+  .hero-note { margin: 22px 0 0; font-size: 13px; opacity: .75; }
+
+  /* layout */
+  .container { max-width: 920px; width: 100%; margin: 0 auto; padding: 0 clamp(16px, 4vw, 24px); }
+  main section { padding: clamp(40px, 7vw, 64px) 0; border-bottom: 1px solid var(--border); }
+  main section:last-of-type { border-bottom: 0; }
+  .section-label { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .lede { color: var(--muted); max-width: 680px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: clamp(16px, 3vw, 22px); min-width: 0; }
+  .card-sub { font-size: 13.5px; color: var(--muted); margin-bottom: 14px; }
+  .chart-box { position: relative; width: 100%; height: 300px; }
+  .chart-box > canvas { width: 100% !important; height: 100% !important; }
+  .table-wrap { overflow-x: auto; }
+
+  /* footer */
+  .site-footer {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    padding: 12px 20px; text-align: center; font-size: 13.5px; color: var(--muted);
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-top: 1px solid var(--border);
+  }
+  .site-footer strong { color: var(--text); }
+  @media (max-width: 600px) { .site-footer { font-size: 12.5px; padding: 10px 14px; } body { padding-bottom: 76px; } }
+  @media print { #site-nav, .site-footer { display: none; } body { padding: 0; } }
+</style>
+<style>
+  /* examples */
+  .kpi-grid, .stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 22px; }
+  .kpi { padding: 16px 18px; position: relative; overflow: hidden; }
+  .kpi::before { content: ""; position: absolute; left: 0; top: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent), var(--purple)); }
+  .kpi-label, .stat-label { font-size: 12px; font-weight: 650; color: var(--muted); }
+  .kpi-value, .stat-value { font-size: clamp(24px, 3.2vw, 30px); font-weight: 800; letter-spacing: -.02em; color: var(--heading); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .kpi-sub, .stat-sub { font-size: 12px; color: var(--muted); }
+  .sql-toggle { margin-top: 12px; }
+  .sql-toggle summary { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; font-size: 12px; font-weight: 650; color: var(--accent); border: 1px solid var(--border); border-radius: 7px; padding: 4px 10px; background: var(--surface); }
+  .sql-toggle summary::-webkit-details-marker { display: none; }
+  .sql-toggle summary::before { content: "▸"; transition: transform .2s; }
+  .sql-toggle[open] summary::before { transform: rotate(90deg); }
+  .sql-toggle summary:hover { background: var(--accent-bg); }
+  .sql-toggle pre, .md-preview pre { margin: 8px 0 0; padding: 12px 14px; overflow-x: auto; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; font: 12.5px/1.6 var(--mono); }
+  .sql-toggle pre code, .md-preview pre code { background: none; border: 0; padding: 0; font-size: inherit; }
+  .sql-note { font-size: 12.5px; color: var(--muted); margin: 8px 0 0; }
+  /* theme-aware highlight.js tokens (instead of the light-only github.min.css) */
+  .hljs-keyword, .hljs-built_in, .hljs-type, .hljs-selector-tag { color: light-dark(#7c3aed, #c4b5fd); }
+  .hljs-string, .hljs-regexp { color: light-dark(#047857, #6ee7b7); }
+  .hljs-number, .hljs-literal { color: light-dark(#b45309, #fbbf24); }
+  .hljs-comment, .hljs-quote { color: var(--muted); font-style: italic; }
+  .hljs-title, .hljs-function, .hljs-attr, .hljs-name { color: light-dark(#0369a1, #7dd3fc); }
+  @media (max-width: 820px) { .kpi-grid, .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 600px) { .kpi-grid, .stats-grid { grid-template-columns: minmax(0, 1fr); } }
+</style>
+<style>
+  /* showcase tabs */
+  .stats-grid { margin-bottom: 30px; }
+  .stat { padding: 16px 18px; }
+  .stat-value { font-size: clamp(30px, 4vw, 38px); color: var(--accent); }
+  .sc-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .sc-tabs [role="tab"] { border: 1px solid var(--border); background: var(--surface); color: var(--text); padding: 7px 16px; border-radius: 999px; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: background .15s, border-color .15s, color .15s; }
+  .sc-tabs [role="tab"]:hover { border-color: var(--accent); }
+  .sc-tabs [role="tab"][aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: light-dark(#fff, #0f172a); }
+  .tab-panel[hidden] { display: none; }
+  .tab-panel.active { animation: tabIn 200ms ease-out both; }
+  @keyframes tabIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .tab-panel.active { animation: none; } }
+  .demo-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px 16px; margin-bottom: 12px; }
+  .demo-head h3 { margin-bottom: 2px; }
+  .demo-head .card-sub { margin: 0; }
+  .demo-head > div:first-child { flex: 1 1 260px; min-width: 0; }
+  .card-sub, .try-coco, .status { overflow-wrap: anywhere; }
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; font-size: 13.5px; }
+  .btn { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 5px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn[aria-pressed="true"] { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+  .seg { display: inline-flex; }
+  .seg .btn { border-radius: 0; }
+  .seg .btn:first-child { border-radius: 8px 0 0 8px; }
+  .seg .btn:last-child { border-radius: 0 8px 8px 0; border-left: 0; }
+  .hint, .status { font-size: 12.5px; color: var(--muted); margin: 0; }
+  .demo-error { color: var(--muted); font-size: 14px; padding: 24px; text-align: center; border: 1px dashed var(--border); border-radius: 10px; margin: 0; }
+  .try-coco { margin: 16px 0 0; padding: 10px 14px; border-left: 3px solid var(--accent); background: var(--accent-bg); border-radius: 0 8px 8px 0; font-size: 13.5px; }
+  .try-coco strong { color: var(--accent); margin-right: 4px; }
+  .two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: minmax(0, 1fr); } }
+</style>
+<style>
+  /* network (colors via CSS vars so SVG follows light/dark automatically) */
+  .n-src { --c: var(--accent); } .n-report { --c: var(--purple); } .n-role { --c: var(--amber); } .n-user { --c: var(--green); }
+  .net-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--muted); margin-bottom: 8px; }
+  .net-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 11px; height: 11px; border-radius: 50%; background: var(--c); display: inline-block; }
+  .net-host { width: 100%; height: 400px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  @media (max-width: 600px) { .net-host { height: 360px; } }
+  .net-host svg { display: block; width: 100%; height: 100%; touch-action: none; }
+  .net-host .link { stroke: var(--muted); stroke-opacity: .55; stroke-width: 1.5; transition: opacity .15s; }
+  .net-host .arrow { fill: var(--muted); }
+  .net-host .node circle { fill: var(--c); stroke: var(--surface); stroke-width: 2; cursor: grab; }
+  .net-host .node text { font-size: 11.5px; font-weight: 600; fill: var(--text); paint-order: stroke; stroke: var(--surface2); stroke-width: 3px; pointer-events: none; }
+  .net-host .node { transition: opacity .15s; }
+  .net-host svg.hovering .node:not(.hl), .net-host svg.hovering .link:not(.hl) { opacity: .12; }
+  .net-host svg.hovering .link.hl { stroke: var(--accent); stroke-opacity: 1; stroke-width: 2.2; }
+</style>
+<style>
+  /* 3D skyline */
+  .skyline { position: relative; height: 380px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border);
+    background: radial-gradient(ellipse at 50% 30%, var(--surface), var(--surface2)); }
+  @media (max-width: 600px) { .skyline { height: 320px; } }
+  .skyline canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; }
+  .skyline canvas:active { cursor: grabbing; }
+  .sky-tip { position: absolute; z-index: 2; pointer-events: none; white-space: nowrap; font-size: 12.5px; font-weight: 600;
+    padding: 5px 9px; border-radius: 7px; background: var(--surface); color: var(--text); border: 1px solid var(--border); box-shadow: var(--shadow-lg); }
+  .webgl-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px; margin: 0; color: var(--muted); font-size: 14px; }
+  .sky-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 16px; margin-top: 8px; }
+  .sky-scale { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .sky-scale i { display: inline-block; width: 90px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #0ea5e9, #8b5cf6, #f43f5e); }
+</style>
+<style>
+  /* diagrams */
+  .mm-fig { margin: 0; min-width: 0; padding: 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; }
+  .mm-fig figcaption { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .mm-out { display: flex; justify-content: center; overflow-x: auto; min-height: 120px; }
+  .mm-out svg { max-width: 100%; height: auto; }
+</style>
+<link rel="stylesheet" href="/libs/katex@0.16.21/katex.min.css">
+<style>
+  /* live editors (math + markdown) */
+  .editor { width: 100%; min-height: 240px; resize: vertical; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text); font: 13px/1.6 var(--mono); }
+  .editor:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .pane-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+  .math-out { min-height: 240px; display: flex; align-items: center; justify-content: center; overflow-x: auto; padding: 16px;
+    border-radius: 10px; border: 1px solid var(--border); background: var(--surface); font-size: 1.15em; }
+  .math-err { color: var(--muted); font: 12.5px/1.5 var(--mono); white-space: pre-wrap; margin: 0; text-align: left; }
+</style>
+<style>
+  .md-preview { min-height: 340px; overflow: auto; padding: 14px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); font-size: 14.5px; }
+  .md-preview > :first-child { margin-top: 0; }
+  .md-preview h1, .md-preview h2, .md-preview h3 { margin: 16px 0 8px; }
+  .md-preview h1 { font-size: 22px; } .md-preview h2 { font-size: 18px; }
+  .md-preview ul, .md-preview ol { padding-left: 22px; margin: 0 0 12px; }
+  .md-preview table { border-collapse: collapse; margin: 0 0 12px; font-size: 13.5px; }
+  .md-preview th, .md-preview td { border: 1px solid var(--border); padding: 5px 10px; text-align: left; }
+  .md-preview th { background: var(--surface2); }
+  .md-preview blockquote { margin: 0 0 12px; padding: 4px 12px; border-left: 3px solid var(--border); color: var(--muted); }
+</style>
+<style>
+  /* tips */
+  .tips-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 22px; }
+  .tip { position: relative; overflow: hidden; }
+  .tip::before { content: ""; position: absolute; left: 0; top: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent), var(--purple)); }
+  .tip-icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 10px; background: var(--accent-bg); color: var(--accent); margin-bottom: 12px; }
+  .tip h3 { font-size: 15.5px; }
+  .tip p { font-size: 14px; color: var(--muted); margin: 0; }
+  @media (max-width: 820px) and (min-width: 601px) { .tips-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 600px) { .tips-grid { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body>
+<nav id="site-nav" aria-label="Sections">
+  <a class="nav-brand" href="#top">HTML reports</a>
+  <div class="nav-links">
+    <a class="nav-link" href="#examples">Examples</a>
+    <a class="nav-link" href="#showcase">Showcase</a>
+    <a class="nav-link" href="#tips">Tips</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <span class="hero-badge">Now in public preview</span>
+  <h1>What you can build with HTML reports</h1>
+  <p class="hero-pitch">Describe a report in plain language and Cortex Code builds an interactive, shareable page: charts, linked views, networks, 3D, diagrams, math, and live editors.</p>
+  <div class="hero-chips" aria-label="Where you can create reports">
+    <span class="chip">Snowsight Workspaces</span>
+    <span class="chip">CoWork</span>
+    <span class="chip">Cortex Code Desktop</span>
+  </div>
+  <p class="hero-note">Sample data from HTML_REPORTS_QS.DEMO · built 2026-11-17</p>
+</header>
+
+<main class="container">
+  <section id="examples">
+    <div class="section-label">Examples</div>
+    <h2>A Q3 revenue review, from one prompt</h2>
+    <p class="lede">The first report most teams build: headline KPIs and revenue by region for July 1 to September 30, 2026, with the exact SQL one click away.</p>
+    <div class="kpi-grid" role="list">
+      <div class="card kpi" role="listitem"><div class="kpi-label">Total revenue</div><div class="kpi-value" data-count="127325282.93" data-format="usdm">$127.3M</div><div class="kpi-sub">Q3 FY26 · all regions</div></div>
+      <div class="card kpi" role="listitem"><div class="kpi-label">Orders</div><div class="kpi-value" data-count="5047" data-format="int">5,047</div><div class="kpi-sub">Jul 1 – Sep 30, 2026</div></div>
+      <div class="card kpi" role="listitem"><div class="kpi-label">Average order value</div><div class="kpi-value" data-count="25227.91" data-format="usd">$25,228</div><div class="kpi-sub">Revenue ÷ orders</div></div>
+      <div class="card kpi" role="listitem"><div class="kpi-label">Top region</div><div class="kpi-value">APAC</div><div class="kpi-sub">$34.3M · 1,356 orders</div></div>
+    </div>
+    <details class="sql-toggle">
+      <summary>View SQL</summary>
+      <pre><code class="language-sql">SELECT ROUND(SUM(revenue_usd), 2) AS total_revenue,
+       COUNT(*)                  AS order_count,
+       ROUND(AVG(revenue_usd), 2) AS avg_order_value
+FROM HTML_REPORTS_QS.DEMO.SALES
+WHERE order_date BETWEEN '2026-07-01' AND '2026-09-30'</code></pre>
+    </details>
+
+    <div class="card" style="margin-top: 22px;">
+      <h3>Revenue by region</h3>
+      <p class="card-sub">Q3 FY26, sorted descending. The leader is drawn in the accent color.</p>
+      <div class="chart-box"><canvas id="region-chart" role="img" aria-label="Bar chart of Q3 2026 revenue by region: APAC $34.3M, LATAM $33.3M, North America $30.4M, EMEA $29.2M"></canvas></div>
+      <details class="sql-toggle">
+        <summary>View SQL</summary>
+        <pre><code class="language-sql">SELECT region,
+       ROUND(SUM(revenue_usd), 2) AS revenue,
+       COUNT(*)                   AS orders
+FROM HTML_REPORTS_QS.DEMO.SALES
+WHERE order_date BETWEEN '2026-07-01' AND '2026-09-30'
+GROUP BY region
+ORDER BY revenue DESC</code></pre>
+      </details>
+    </div>
+  </section>
+  <section id="showcase">
+    <div class="section-label">Showcase</div>
+    <h2>Every approved library, one tab each</h2>
+    <p class="lede">Each demo below runs inside the same sandbox as a published report. Data is embedded, scripts come only from the vendored <code>/libs/</code> path, and nothing is fetched at view time.</p>
+    <div class="stats-grid" role="list">
+      <div class="card stat" role="listitem"><div class="stat-label">Vendored libraries</div><div class="stat-value" data-count="9">9</div><div class="stat-sub">Vega, Vega-Lite and Vega-Embed count as one</div></div>
+      <div class="card stat" role="listitem"><div class="stat-label">Places to create</div><div class="stat-value" data-count="3">3</div><div class="stat-sub">Workspaces, CoWork, CoCo Desktop</div></div>
+      <div class="card stat" role="listitem"><div class="stat-label">Places to view</div><div class="stat-value" data-count="2">2</div><div class="stat-sub">Snowsight and CoWork</div></div>
+      <div class="card stat" role="listitem"><div class="stat-label">Network calls</div><div class="stat-value" data-count="0">0</div><div class="stat-sub">All data ships inside the page</div></div>
+    </div>
+
+    <div class="sc-tabs" id="showcase-tabs" role="tablist" aria-label="Showcase demos">
+      <button type="button" role="tab" id="tab-charts" data-tab="charts" aria-controls="panel-charts" aria-selected="true">Charts</button>
+      <button type="button" role="tab" id="tab-linked" data-tab="linked" aria-controls="panel-linked" aria-selected="false" tabindex="-1">Linked views</button>
+      <button type="button" role="tab" id="tab-network" data-tab="network" aria-controls="panel-network" aria-selected="false" tabindex="-1">Network</button>
+      <button type="button" role="tab" id="tab-3d" data-tab="3d" aria-controls="panel-3d" aria-selected="false" tabindex="-1">3D</button>
+      <button type="button" role="tab" id="tab-diagrams" data-tab="diagrams" aria-controls="panel-diagrams" aria-selected="false" tabindex="-1">Diagrams</button>
+      <button type="button" role="tab" id="tab-math" data-tab="math" aria-controls="panel-math" aria-selected="false" tabindex="-1">Math</button>
+      <button type="button" role="tab" id="tab-markdown" data-tab="markdown" aria-controls="panel-markdown" aria-selected="false" tabindex="-1">Markdown</button>
+    </div>
+    <div class="tab-panel card" id="panel-charts" role="tabpanel" aria-labelledby="tab-charts" tabindex="0">
+      <div class="demo-head"><div><h3>Weekly active users</h3><p class="card-sub">Chart.js · 52 weeks from HTML_REPORTS_QS.DEMO.WEEKLY_ACTIVE_USERS</p></div></div>
+      <div class="controls">
+        <label for="wau-range">Weeks shown</label>
+        <input id="wau-range" type="range" min="4" max="52" value="26" aria-describedby="wau-range-out">
+        <output id="wau-range-out" for="wau-range">26 wks</output>
+        <span class="seg" role="group" aria-label="Line / bar">
+          <button type="button" class="btn" data-wau-type="line" aria-pressed="true">Line</button>
+          <button type="button" class="btn" data-wau-type="bar" aria-pressed="false">Bar</button>
+        </span>
+        <button type="button" class="btn" id="wau-random">Randomize</button>
+        <button type="button" class="btn" id="wau-reset">Actual data</button>
+      </div>
+      <div class="demo-stage"><div class="chart-box"><canvas id="wau-chart" role="img" aria-label="Weekly active users over time"></canvas></div></div>
+      <p class="status" id="wau-status" role="status" aria-live="polite">Showing actual data.</p>
+      <details class="sql-toggle">
+        <summary>View SQL</summary>
+        <pre><code class="language-sql">SELECT week_start, active_users
+FROM HTML_REPORTS_QS.DEMO.WEEKLY_ACTIVE_USERS
+ORDER BY week_start</code></pre>
+      </details>
+      <p class="try-coco"><strong>Try asking CoCo:</strong>"Chart weekly active users from HTML_REPORTS_QS.DEMO.WEEKLY_ACTIVE_USERS with Chart.js. Add a 4 to 52 week range slider with a live label, a Line / bar toggle, and a seeded Randomize button. Animate every update over about 500ms."</p>
+    </div>
+    <div class="tab-panel card" id="panel-linked" role="tabpanel" aria-labelledby="tab-linked" tabindex="0" hidden>
+      <div class="demo-head"><div><h3>Brush to cross-filter</h3><p class="card-sub">Vega-Lite · a 399-query sample of HTML_REPORTS_QS.DEMO.QUERY_LOG</p></div></div>
+      <p class="hint">Drag a rectangle on the scatter to filter the bars below. Double-click the scatter to clear.</p>
+      <div class="demo-stage"><div class="vl-wrap" id="vl-host" style="overflow-x: auto;"></div></div>
+      <p class="status" id="vl-status" role="status" aria-live="polite"></p>
+      <details class="sql-toggle">
+        <summary>View SQL</summary>
+        <p class="sql-note">Every 5th row in a stable sort order, excluding the 5 rows with duration_ms = 0 (they can't sit on a log axis):</p>
+        <pre><code class="language-sql">SELECT warehouse_size, query_type, rows_scanned, duration_ms
+FROM HTML_REPORTS_QS.DEMO.QUERY_LOG
+WHERE duration_ms &gt; 0
+QUALIFY MOD(ROW_NUMBER() OVER (
+          ORDER BY rows_scanned, duration_ms, warehouse_size, query_type), 5) = 0</code></pre>
+      </details>
+      <p class="try-coco"><strong>Try asking CoCo:</strong>"Using Vega-Lite and HTML_REPORTS_QS.DEMO.QUERY_LOG, draw a log-scale scatter of duration_ms vs rows_scanned colored by warehouse_size, with a bar chart of query count by query_type below. Dragging a brush on the scatter filters the bars; double-click clears it."</p>
+    </div>
+    <div class="tab-panel card" id="panel-network" role="tabpanel" aria-labelledby="tab-network" tabindex="0" hidden>
+      <div class="demo-head"><div><h3>Who depends on what</h3><p class="card-sub">D3 · source tables feed reports, reports are shared with roles and users (HTML_REPORTS_QS.DEMO.OBJECT_DEPENDENCIES)</p></div>
+        <button type="button" class="btn" id="net-shake">Shake it</button></div>
+      <div class="net-legend" aria-label="Legend">
+        <span><i class="sw n-src"></i>Source table</span><span><i class="sw n-report"></i>Report</span><span><i class="sw n-role"></i>Role</span><span><i class="sw n-user"></i>User</span>
+      </div>
+      <div class="demo-stage"><div class="net-host" id="net-host"></div></div>
+      <p class="hint">Drag any node · hover to highlight its direct neighbors</p>
+      <details class="sql-toggle">
+        <summary>View SQL</summary>
+        <pre><code class="language-sql">SELECT source_name, source_type, target_name, target_type
+FROM HTML_REPORTS_QS.DEMO.OBJECT_DEPENDENCIES</code></pre>
+      </details>
+      <p class="try-coco"><strong>Try asking CoCo:</strong>"Build a D3 force-directed graph from HTML_REPORTS_QS.DEMO.OBJECT_DEPENDENCIES. Color nodes by type with a legend, make nodes draggable, highlight a node's neighbors on hover, and add a Shake it button that re-energizes the layout."</p>
+    </div>
+    <div class="tab-panel card" id="panel-3d" role="tabpanel" aria-labelledby="tab-3d" tabindex="0" hidden>
+      <div class="demo-head"><div><h3>A week of warehouse credits</h3><p class="card-sub">Three.js · 24 hours × 7 days from HTML_REPORTS_QS.DEMO.WAREHOUSE_CREDITS_HOURLY (Nov 9–15, 2026)</p></div></div>
+      <div class="demo-stage"><div class="skyline" id="skyline"><div class="sky-tip" id="sky-tip" hidden></div></div></div>
+      <div class="sky-foot">
+        <p class="hint">Drag to orbit · hover for values</p>
+        <span class="sky-scale" aria-hidden="true"><span>Low</span><i></i><span>High</span></span>
+      </div>
+      <p class="status" id="sky-summary"></p>
+      <details class="sql-toggle">
+        <summary>View SQL</summary>
+        <pre><code class="language-sql">SELECT day_name, hour_of_day, credits
+FROM HTML_REPORTS_QS.DEMO.WAREHOUSE_CREDITS_HOURLY
+ORDER BY hour_start</code></pre>
+      </details>
+      <p class="try-coco"><strong>Try asking CoCo:</strong>"Make a Three.js 3D bar chart of credits from HTML_REPORTS_QS.DEMO.WAREHOUSE_CREDITS_HOURLY, 24 hours by 7 days, colored by value. Drag to orbit, hover for values, auto-rotate after 1.5 seconds idle, grow the bars in from zero, and show a message if WebGL isn't available."</p>
+    </div>
+    <div class="tab-panel card" id="panel-diagrams" role="tabpanel" aria-labelledby="tab-diagrams" tabindex="0" hidden>
+      <div class="demo-head"><div><h3>How a report gets published</h3><p class="card-sub">Mermaid · two diagrams written as plain text</p></div></div>
+      <div class="demo-stage two-col">
+        <figure class="mm-fig"><figcaption>Pipeline</figcaption><div class="mm-out" id="mm-flow" data-src="flowchart LR
+  A[CoCo writes HTML] --&gt; B[Sanitize] --&gt; C[Renderer] --&gt; D[Sandbox] --&gt; E[Report]"></div></figure>
+        <figure class="mm-fig"><figcaption>Publish and update</figcaption><div class="mm-out" id="mm-seq" data-src="sequenceDiagram
+  participant You
+  participant CoCo
+  participant Snowflake
+  You-&gt;&gt;CoCo: Create a report
+  CoCo-&gt;&gt;Snowflake: Save the .html file
+  You-&gt;&gt;Snowflake: Publish the artifact
+  Snowflake--&gt;&gt;You: One stable link
+  You-&gt;&gt;Snowflake: Publish changes
+  Snowflake--&gt;&gt;You: Same link, new version"></div></figure>
+      </div>
+      <p class="try-coco"><strong>Try asking CoCo:</strong>"Explain how an HTML report gets published with two Mermaid diagrams side by side: a left-to-right flowchart from CoCo writes HTML through Sanitize, Renderer, and Sandbox to Report, and a sequence diagram between You, CoCo, and Snowflake. Match the colors to light or dark mode."</p>
+    </div>
+    <div class="tab-panel card" id="panel-math" role="tabpanel" aria-labelledby="tab-math" tabindex="0" hidden>
+      <div class="demo-head"><div><h3>Live math typesetting</h3><p class="card-sub">KaTeX · edit the LaTeX and the math re-renders on every keystroke</p></div>
+        <div class="controls" style="margin: 0;" role="group" aria-label="Presets">
+          <button type="button" class="btn" data-preset="euler">Euler</button>
+          <button type="button" class="btn" data-preset="gauss">Gaussian</button>
+          <button type="button" class="btn" data-preset="binom">Binomial</button>
+        </div></div>
+      <div class="demo-stage two-col">
+        <div><p class="pane-label"><label for="tex-in">LaTeX source</label></p><textarea id="tex-in" class="editor" spellcheck="false">\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}</textarea></div>
+        <div><p class="pane-label">Rendered</p><div class="math-out" id="tex-out" aria-live="polite"></div></div>
+      </div>
+      <p class="try-coco"><strong>Try asking CoCo:</strong>"Add a live LaTeX editor with KaTeX: source on the left, rendered math on the right, re-rendered on every keystroke. Show invalid LaTeX as a muted inline error, and add Euler, Gaussian, and Binomial preset buttons."</p>
+    </div>
+    <div class="tab-panel card" id="panel-markdown" role="tabpanel" aria-labelledby="tab-markdown" tabindex="0" hidden>
+      <div class="demo-head"><div><h3>Live Markdown preview</h3><p class="card-sub">Marked + highlight.js · output is sanitized before it touches the page</p></div></div>
+      <div class="demo-stage two-col">
+        <div><p class="pane-label"><label for="md-in">Markdown</label></p><textarea id="md-in" class="editor" spellcheck="false" style="min-height: 340px;"># Revenue review
+
+Builds the **Q3 FY26 review** from `HTML_REPORTS_QS.DEMO.SALES`.
+
+- Data is embedded at build time
+- Charts load only from `/libs/`
+- Raw HTML such as script tags or onclick attributes is stripped
+
+| Region | Q3 revenue |
+|---|---|
+| APAC | $34.3M |
+| LATAM | $33.3M |
+| North America | $30.4M |
+| EMEA | $29.2M |
+
+```sql
+SELECT region, SUM(revenue_usd) AS revenue
+FROM HTML_REPORTS_QS.DEMO.SALES
+WHERE order_date BETWEEN '2026-07-01' AND '2026-09-30'
+GROUP BY region
+ORDER BY revenue DESC;
+```
+</textarea></div>
+        <div><p class="pane-label">Preview</p><div class="md-preview" id="md-out" aria-live="polite"></div></div>
+      </div>
+      <p class="status" id="md-status" role="status"></p>
+      <p class="try-coco"><strong>Try asking CoCo:</strong>"Add a live Markdown editor: a short README with a heading, a list, a table, and a SQL code block in a text area on the left, and the Marked preview on the right with highlight.js code blocks. Update on every keystroke and sanitize the rendered HTML."</p>
+    </div>
+  </section>
+  <section id="tips">
+    <div class="section-label">Tips</div>
+    <h2>Before you share</h2>
+    <div class="tips-grid">
+      <article class="card tip">
+        <span class="tip-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
+        <h3>Reports are snapshots</h3>
+        <p>Data is embedded when the report is built and doesn't re-query when someone opens it. To refresh, rerun the queries (or use <strong>Refresh report</strong> in Workspaces), then publish again. The link stays the same.</p>
+      </article>
+      <article class="card tip">
+        <span class="tip-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg></span>
+        <h3>Use the approved libraries</h3>
+        <p>Scripts load only from the vendored <code>/libs/</code> path: Chart.js, Plotly (cartesian), D3, Vega, Mermaid, KaTeX, highlight.js, Marked, and Three.js. No CDNs, <code>fetch</code>, iframes, cookies, or local storage.</p>
+      </article>
+      <article class="card tip">
+        <span class="tip-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="13" height="10" rx="1.5"/><path d="M6 18h6"/><rect x="17" y="8" width="4.5" height="10" rx="1"/></svg></span>
+        <h3>Design for every screen and theme</h3>
+        <p>Reports open on phones, in narrow side panels, and in dark mode. Ask for grids that stack on narrow screens, fixed-height chart boxes, and colors that adapt to light and dark.</p>
+      </article>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer"><strong>Every number here was embedded when the report was built</strong> · no network calls at view time</footer>
+
+<script src="/libs/chart.js@4.4.4/chart.umd.js"></script>
+<script src="/libs/vega@6.2.0/vega.min.js"></script>
+<script src="/libs/vega-lite@6.4.3/vega-lite.min.js"></script>
+<script src="/libs/vega-embed@7.1.0/vega-embed.min.js"></script>
+<script src="/libs/d3@7.9.0/d3.min.js"></script>
+<script src="/libs/mermaid@10.9.6/mermaid.min.js"></script>
+<script src="/libs/katex@0.16.21/katex.min.js"></script>
+<script src="/libs/marked@14.1.3/marked.min.js"></script>
+<script src="/libs/highlight.js@11.10.0/highlight.min.js"></script>
+<script>
+/* Core: theme helpers, count-up, scroll-spy, tabs with lazy render. Demos register into SC.renderers. */
+window.SC = (function () {
+  'use strict';
+  const DATA = JSON.parse(document.getElementById('report-data').textContent);
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const darkMQ = matchMedia('(prefers-color-scheme: dark)');
+
+  // Canvas/SVG libraries can't read light-dark(); resolve CSS vars through a probe element.
+  const probe = document.createElement('span');
+  probe.setAttribute('aria-hidden', 'true');
+  probe.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;';
+  document.body.appendChild(probe);
+  function cssColor(name) { probe.style.color = 'var(' + name + ')'; return getComputedStyle(probe).color; }
+  function nums(c) { return (c.match(/[\d.]+/g) || ['0', '0', '0']).slice(0, 3).map(Number); }
+  function rgba(c, a) { const m = nums(c); return 'rgba(' + m[0] + ',' + m[1] + ',' + m[2] + ',' + a + ')'; }
+  function hex(c) { return '#' + nums(c).map(n => Math.round(n).toString(16).padStart(2, '0')).join(''); }
+  const theme = {};
+  function readTheme() {
+    ['text', 'heading', 'muted', 'border', 'accent', 'accent-bg', 'surface', 'surface2', 'purple', 'green', 'amber', 'rose']
+      .forEach(k => { theme[k.replace('-bg', 'Bg')] = cssColor('--' + k); });
+    theme.dark = darkMQ.matches;
+  }
+  readTheme();
+  const themeListeners = [];
+  darkMQ.addEventListener('change', () => { readTheme(); themeListeners.forEach(fn => { try { fn(); } catch (e) { console.error(e); } }); });
+
+  const fmt = {
+    usdm: v => '$' + (v / 1e6).toFixed(1) + 'M',
+    usd: v => '$' + Math.round(v).toLocaleString('en-US'),
+    int: v => Math.round(v).toLocaleString('en-US'),
+  };
+  // Count up from 0 with an ease-out curve. Final values are already in the HTML for no-JS views.
+  function countUp(root) {
+    root.querySelectorAll('[data-count]').forEach(el => {
+      const target = Number(el.dataset.count), f = fmt[el.dataset.format || 'int'], dur = Number(el.dataset.duration || 1200);
+      if (reduceMotion) { el.textContent = f(target); return; }
+      const t0 = performance.now();
+      el.textContent = f(0);
+      (function step(now) {
+        const p = Math.min(1, (now - t0) / dur);
+        el.textContent = f(target * (1 - Math.pow(1 - p, 3)));
+        if (p < 1) requestAnimationFrame(step);
+      })(t0);
+    });
+  }
+
+  function need(lib, name) { if (!lib) throw new Error(name + ' did not load.'); }
+  function demoError(id, err) {
+    console.error(err);
+    const stage = document.querySelector('#panel-' + id + ' .demo-stage');
+    if (!stage) return;
+    const p = document.createElement('p');
+    p.className = 'demo-error';
+    p.textContent = 'This demo could not render: ' + (err && err.message ? err.message : String(err));
+    stage.replaceChildren(p);
+  }
+
+  // Scroll-spy: the active link is the last section whose top has passed just under the nav.
+  function initSpy() {
+    const nav = document.getElementById('site-nav');
+    const links = Array.from(document.querySelectorAll('.nav-link'));
+    const sections = links.map(a => document.getElementById(a.getAttribute('href').slice(1)));
+    let queued = false;
+    function spy() {
+      queued = false;
+      const line = nav.offsetHeight + 90;
+      let current = null;
+      sections.forEach(s => { if (s.getBoundingClientRect().top <= line) current = s.id; });
+      const de = document.documentElement;
+      if (window.innerHeight + window.scrollY >= de.scrollHeight - 4) current = sections[sections.length - 1].id;
+      links.forEach(a => {
+        const on = a.getAttribute('href') === '#' + current;
+        a.classList.toggle('active', on);
+        if (on) a.setAttribute('aria-current', 'location'); else a.removeAttribute('aria-current');
+      });
+    }
+    window.addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimationFrame(spy); } }, { passive: true });
+    window.addEventListener('resize', spy);
+    spy();
+  }
+
+  // Tabs: render each demo the first time its panel is visible, so it measures a real width.
+  const renderers = {};
+  const rendered = new Set();
+  function initTabs() {
+    const list = document.getElementById('showcase-tabs');
+    if (!list) return;
+    const tabs = Array.from(list.querySelectorAll('[role="tab"]'));
+    function activate(tab, focus) {
+      tabs.forEach(t => {
+        const on = t === tab;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+        const panel = document.getElementById(t.getAttribute('aria-controls'));
+        panel.hidden = !on;
+        panel.classList.toggle('active', on);
+      });
+      if (focus) tab.focus();
+      const id = tab.dataset.tab;
+      list.dataset.active = id;
+      if (!rendered.has(id) && renderers[id]) {
+        rendered.add(id);
+        try { const r = renderers[id](); if (r && r.catch) r.catch(e => demoError(id, e)); } catch (e) { demoError(id, e); }
+      }
+      document.dispatchEvent(new CustomEvent('showcase:tab', { detail: { id } }));
+    }
+    tabs.forEach(t => t.addEventListener('click', () => activate(t, false)));
+    list.addEventListener('keydown', e => {
+      const i = tabs.indexOf(document.activeElement);
+      if (i < 0) return;
+      let n = null;
+      if (e.key === 'ArrowRight') n = (i + 1) % tabs.length;
+      else if (e.key === 'ArrowLeft') n = (i - 1 + tabs.length) % tabs.length;
+      else if (e.key === 'Home') n = 0;
+      else if (e.key === 'End') n = tabs.length - 1;
+      if (n !== null) { e.preventDefault(); activate(tabs[n], true); }
+    });
+    activate(tabs[0], false);
+  }
+  function isRendered(id) { return rendered.has(id); }
+  function isVisible(id) { const p = document.getElementById('panel-' + id); return !!p && !p.hidden; }
+
+  // Highlight static SQL blocks (View SQL toggles).
+  function highlightStatic() {
+    if (!window.hljs) return;
+    document.querySelectorAll('pre code.language-sql').forEach(el => hljs.highlightElement(el));
+  }
+
+  // Stats count up once, the first time the row is ~40% in view (final values stay put for reduced motion).
+  function initStats() {
+    const row = document.querySelector('.stats-grid');
+    if (!row || reduceMotion) return;
+    if (!('IntersectionObserver' in window)) { countUp(row); return; }
+    row.querySelectorAll('[data-count]').forEach(el => { el.textContent = fmt[el.dataset.format || 'int'](0); });
+    const io = new IntersectionObserver(entries => {
+      if (!entries.some(e => e.isIntersecting)) return;
+      io.disconnect();
+      countUp(row);
+    }, { threshold: 0.4 });
+    io.observe(row);
+  }
+
+  function boot() {
+    initSpy();
+    countUp(document.querySelector('.kpi-grid'));
+    initStats();
+    highlightStatic();
+    initTabs();
+  }
+
+  return { DATA, theme, rgba, hex, fmt, need, demoError, reduceMotion, darkMQ, onTheme: fn => themeListeners.push(fn),
+    renderers, isRendered, isVisible, boot };
+})();
+</script>
+<script>
+/* Examples: region bar chart (visible on load, so it renders immediately). */
+(function () {
+  'use strict';
+  const el = document.getElementById('region-chart');
+  if (!window.Chart) { el.parentElement.textContent = 'Chart.js did not load.'; return; }
+  const t = SC.theme, rows = SC.DATA.regions;
+  Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+  const labels = {
+    id: 'barLabels',
+    afterDatasetsDraw(chart) {
+      const ctx = chart.ctx, meta = chart.getDatasetMeta(0);
+      ctx.save();
+      ctx.fillStyle = t.text;
+      ctx.font = '600 ' + (chart.width < 340 ? 11 : 12) + 'px ' + Chart.defaults.font.family;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      meta.data.forEach((bar, i) => ctx.fillText(SC.fmt.usdm(rows[i].revenue), bar.x, bar.y - 4));
+      ctx.restore();
+    },
+  };
+  const chart = new Chart(el, {
+    type: 'bar',
+    data: { labels: rows.map(r => r.region), datasets: [{ label: 'Q3 revenue', data: rows.map(r => r.revenue),
+      backgroundColor: c => c.dataIndex === 0 ? t.accent : SC.rgba(t.accent, 0.4), borderRadius: 6, maxBarThickness: 84 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: SC.reduceMotion ? 0 : 900 },
+      layout: { padding: { top: 24 } },
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: c => ' ' + SC.fmt.usd(c.parsed.y) + ' · ' + SC.fmt.int(rows[c.dataIndex].orders) + ' orders' } } },
+      scales: {
+        y: { beginAtZero: true, ticks: { color: () => t.muted, callback: v => '$' + v / 1e6 + 'M' }, grid: { color: () => t.border } },
+        x: { ticks: { color: () => t.muted }, grid: { display: false } },
+      },
+    },
+    plugins: [labels],
+  });
+  SC.onTheme(() => chart.update('none'));
+})();
+</script>
+<script>
+/* Tab: Charts (Chart.js). */
+SC.renderers.charts = function () {
+  'use strict';
+  SC.need(window.Chart, 'Chart.js');
+  const t = SC.theme, wau = SC.DATA.wau;
+  const canvas = document.getElementById('wau-chart');
+  const range = document.getElementById('wau-range'), out = document.getElementById('wau-range-out');
+  const status = document.getElementById('wau-status');
+  const typeBtns = document.querySelectorAll('[data-wau-type]');
+  const actual = wau.map(d => d[1]);
+  let values = actual.slice(), weeks = Number(range.value), type = 'line', seed = 7, chart = null;
+
+  // Seeded PRNG so a resample is stable until the button is clicked again.
+  function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let x = Math.imul(a ^ a >>> 15, 1 | a); x = x + Math.imul(x ^ x >>> 7, 61 | x) ^ x; return ((x ^ x >>> 14) >>> 0) / 4294967296; }; }
+  function shortDate(s) { const p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
+  function longDate(s) { const p = s.split('-'); return 'Week of ' + new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+  const slice = arr => arr.slice(-weeks);
+
+  function build() {
+    if (chart) chart.destroy();
+    chart = new Chart(canvas, {
+      type,
+      data: { labels: slice(wau.map(d => shortDate(d[0]))), datasets: [{
+        label: 'Weekly active users', data: slice(values),
+        borderColor: () => t.accent, backgroundColor: () => SC.rgba(t.accent, type === 'bar' ? 0.75 : 0.14),
+        fill: true, tension: 0.3, borderWidth: 2, pointRadius: 2, pointHoverRadius: 5, borderRadius: 4,
+      }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        animation: { duration: SC.reduceMotion ? 0 : 500 },
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { display: false },
+          tooltip: { callbacks: { title: items => longDate(slice(wau)[items[0].dataIndex][0]), label: c => ' ' + SC.fmt.int(c.parsed.y) + ' active users' } } },
+        scales: {
+          y: { ticks: { color: () => t.muted }, grid: { color: () => t.border } },
+          x: { ticks: { color: () => t.muted, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, grid: { display: false } },
+        },
+      },
+    });
+  }
+  function update() {
+    chart.data.labels = slice(wau.map(d => shortDate(d[0])));
+    chart.data.datasets[0].data = slice(values);
+    chart.update();
+  }
+  range.addEventListener('input', () => { weeks = Number(range.value); out.textContent = weeks + ' wks'; update(); });
+  typeBtns.forEach(b => b.addEventListener('click', () => {
+    if (b.dataset.wauType === type) return;
+    type = b.dataset.wauType;
+    typeBtns.forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    build();
+  }));
+  document.getElementById('wau-random').addEventListener('click', () => {
+    const rnd = mulberry32(++seed);
+    values = actual.map(v => Math.round(v * (0.8 + rnd() * 0.4)));
+    status.textContent = 'Showing resampled demo values (seed ' + seed + '), not real data.';
+    update();
+  });
+  document.getElementById('wau-reset').addEventListener('click', () => {
+    values = actual.slice(); status.textContent = 'Showing actual data.'; update();
+  });
+  build();
+  SC.onTheme(() => chart.update('none'));
+};
+</script>
+<script>
+/* Tab: Linked views (Vega-Lite brush). Re-embeds on theme change or a large resize. */
+SC.renderers.linked = function () {
+  'use strict';
+  SC.need(window.vegaEmbed, 'Vega-Embed');
+  const SIZES = ['X-Small', 'Small', 'Medium', 'Large'], TYPES = ['SELECT', 'INSERT', 'MERGE', 'CREATE TABLE AS'];
+  const rows = SC.DATA.qlog.map(r => ({ warehouse_size: SIZES[r[0]], query_type: TYPES[r[1]], rows_scanned: r[2], duration_ms: r[3] }));
+  const host = document.getElementById('vl-host'), status = document.getElementById('vl-status');
+  let view = null, lastWidth = 0;
+
+  function setStatus(brush) {
+    const f = brush && brush.rows_scanned && brush.duration_ms;
+    if (!f) { status.textContent = 'Showing all ' + rows.length + ' sampled queries.'; return; }
+    const [r0, r1] = [Math.min(...brush.rows_scanned), Math.max(...brush.rows_scanned)];
+    const [d0, d1] = [Math.min(...brush.duration_ms), Math.max(...brush.duration_ms)];
+    const n = rows.filter(r => r.rows_scanned >= r0 && r.rows_scanned <= r1 && r.duration_ms >= d0 && r.duration_ms <= d1).length;
+    status.textContent = 'Brushed ' + n + ' of ' + rows.length + ' queries. Double-click to clear.';
+  }
+  function spec(width) {
+    const t = SC.theme;
+    const font = getComputedStyle(document.body).fontFamily;
+    return {
+      data: { values: rows },
+      config: { background: null, font, view: { stroke: null },
+        axis: { labelColor: t.muted, titleColor: t.text, gridColor: t.border, domainColor: t.border, tickColor: t.border, titleFontWeight: 600 },
+        legend: { labelColor: t.muted, titleColor: t.text } },
+      vconcat: [{
+        width, height: 240,
+        params: [{ name: 'brush', select: { type: 'interval', encodings: ['x', 'y'] } }],
+        mark: { type: 'point', filled: true, size: 34 },
+        encoding: {
+          x: { field: 'rows_scanned', type: 'quantitative', scale: { type: 'log' }, title: 'Rows scanned (log)', axis: { format: '~s' } },
+          y: { field: 'duration_ms', type: 'quantitative', scale: { type: 'log' }, title: 'Duration, ms (log)', axis: { format: '~s' } },
+          color: { field: 'warehouse_size', type: 'nominal', title: 'Warehouse', scale: { domain: SIZES, range: [t.accent, t.purple, t.amber, t.rose] }, legend: { orient: 'top' } },
+          opacity: { condition: { param: 'brush', value: 0.8 }, value: 0.12 },
+          tooltip: [{ field: 'warehouse_size', title: 'Warehouse' }, { field: 'query_type', title: 'Type' },
+            { field: 'rows_scanned', title: 'Rows', format: ',' }, { field: 'duration_ms', title: 'Duration (ms)', format: ',' }],
+        },
+      }, {
+        width, height: 140,
+        encoding: { y: { field: 'query_type', type: 'nominal', title: null, scale: { domain: TYPES }, sort: TYPES } },
+        layer: [
+          { mark: { type: 'bar', color: t.border, cornerRadiusEnd: 3 }, encoding: { x: { aggregate: 'count', type: 'quantitative', title: 'Queries' } } },
+          { transform: [{ filter: { param: 'brush' } }], mark: { type: 'bar', color: t.accent, cornerRadiusEnd: 3 },
+            encoding: { x: { aggregate: 'count', type: 'quantitative' } } },
+          { transform: [{ filter: { param: 'brush' } }], mark: { type: 'text', align: 'left', dx: 4, color: t.text },
+            encoding: { x: { aggregate: 'count', type: 'quantitative' }, text: { aggregate: 'count', type: 'quantitative' } } },
+        ],
+      }],
+    };
+  }
+  function embed() {
+    if (view) { view.finalize(); view = null; }
+    lastWidth = host.clientWidth;
+    const width = Math.max(220, Math.min(700, lastWidth - 130));
+    host.textContent = '';
+    return vegaEmbed(host, spec(width), { ast: true, mode: 'vega-lite', actions: false }).then(res => {
+      view = res.view;
+      setStatus(null);
+      view.addSignalListener('brush', (name, value) => setStatus(value));
+    });
+  }
+  let timer = 0;
+  new ResizeObserver(() => {
+    if (!SC.isVisible('linked') || Math.abs(host.clientWidth - lastWidth) < 40) return;
+    clearTimeout(timer);
+    timer = setTimeout(() => embed().catch(e => SC.demoError('linked', e)), 250);
+  }).observe(host);
+  SC.onTheme(() => embed().catch(e => SC.demoError('linked', e)));
+  return embed();
+};
+</script>
+<script>
+/* Tab: Network (D3 force-directed graph). */
+SC.renderers.network = function () {
+  'use strict';
+  SC.need(window.d3, 'D3');
+  const host = document.getElementById('net-host');
+  const CLS = { 'Source table': 'n-src', 'Report': 'n-report', 'Role': 'n-role', 'User': 'n-user' };
+  const RANK = { 'Source table': 0, 'Report': 1, 'Role': 2, 'User': 3 };
+  const byId = new Map();
+  SC.DATA.deps.forEach(e => {
+    if (!byId.has(e.s)) byId.set(e.s, { id: e.s, type: e.st });
+    if (!byId.has(e.t)) byId.set(e.t, { id: e.t, type: e.tt });
+  });
+  const nodes = Array.from(byId.values());
+  const links = SC.DATA.deps.map(e => ({ source: e.s, target: e.t }));
+  const adj = new Set(SC.DATA.deps.flatMap(e => [e.s + '|' + e.t, e.t + '|' + e.s]));
+  let w = host.clientWidth, h = host.clientHeight;
+
+  const svg = d3.select(host).append('svg').attr('viewBox', [0, 0, w, h])
+    .attr('role', 'img').attr('aria-label', 'Dependency graph: ' + nodes.length + ' objects and ' + links.length + ' edges');
+  svg.append('defs').append('marker').attr('id', 'net-arrow').attr('viewBox', '0 -4 8 8').attr('refX', 20).attr('markerWidth', 7).attr('markerHeight', 7).attr('orient', 'auto')
+    .append('path').attr('class', 'arrow').attr('d', 'M0,-4L8,0L0,4');
+  const link = svg.append('g').selectAll('line').data(links).join('line').attr('class', 'link').attr('marker-end', 'url(#net-arrow)');
+  const node = svg.append('g').selectAll('g').data(nodes).join('g').attr('class', d => 'node ' + CLS[d.type]);
+  node.append('circle').attr('r', d => d.type === 'Report' ? 12 : 9);
+  node.append('text').attr('text-anchor', 'middle').attr('dy', d => (d.type === 'Report' ? 12 : 9) + 14).text(d => d.id);
+  node.append('title').text(d => d.id + ' (' + d.type + ')');
+
+  const xFor = d => w * (0.12 + RANK[d.type] * 0.253);
+  const sim = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d => d.id).distance(70).strength(0.6))
+    .force('charge', d3.forceManyBody().strength(-260))
+    .force('collide', d3.forceCollide(30))
+    .force('x', d3.forceX(xFor).strength(0.35))
+    .force('y', d3.forceY(() => h / 2).strength(0.08))
+    .on('tick', () => {
+      nodes.forEach(d => { d.x = Math.max(46, Math.min(w - 46, d.x)); d.y = Math.max(16, Math.min(h - 30, d.y)); });
+      link.attr('x1', d => d.source.x).attr('y1', d => d.source.y).attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+      node.attr('transform', d => 'translate(' + d.x + ',' + d.y + ')');
+    });
+
+  node.call(d3.drag()
+    .on('start', (e, d) => { if (!e.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+    .on('drag', (e, d) => { d.fx = e.x; d.fy = e.y; })
+    .on('end', (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; }));
+  node.on('mouseenter', (e, d) => {
+    svg.classed('hovering', true);
+    node.classed('hl', o => o.id === d.id || adj.has(d.id + '|' + o.id));
+    link.classed('hl', l => l.source.id === d.id || l.target.id === d.id);
+  }).on('mouseleave', () => { svg.classed('hovering', false); node.classed('hl', false); link.classed('hl', false); });
+
+  document.getElementById('net-shake').addEventListener('click', () => {
+    nodes.forEach(n => { n.vx += (Math.random() - 0.5) * 80; n.vy += (Math.random() - 0.5) * 80; });
+    sim.alpha(1).restart();
+  });
+  new ResizeObserver(() => {
+    const nw = host.clientWidth, nh = host.clientHeight;
+    if (!nw || (Math.abs(nw - w) < 2 && Math.abs(nh - h) < 2)) return;
+    w = nw; h = nh;
+    svg.attr('viewBox', [0, 0, w, h]);
+    sim.force('x', d3.forceX(xFor).strength(0.35)).force('y', d3.forceY(() => h / 2).strength(0.08)).alpha(0.4).restart();
+  }).observe(host);
+};
+</script>
+<script>
+/* Tab: Diagrams (Mermaid, securityLevel strict). */
+SC.renderers.diagrams = function () {
+  'use strict';
+  SC.need(window.mermaid, 'Mermaid');
+  const outs = Array.from(document.querySelectorAll('#panel-diagrams .mm-out'));
+  let n = 0;
+  function draw() {
+    const t = SC.theme;
+    mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'base',
+      fontFamily: getComputedStyle(document.body).fontFamily,
+      themeVariables: { background: SC.hex(t.surface), primaryColor: SC.hex(t.accentBg), primaryBorderColor: SC.hex(t.accent),
+        primaryTextColor: SC.hex(t.heading), lineColor: SC.hex(t.muted), textColor: SC.hex(t.text),
+        actorBkg: SC.hex(t.accentBg), actorBorder: SC.hex(t.accent), actorTextColor: SC.hex(t.heading), actorLineColor: SC.hex(t.muted),
+        signalColor: SC.hex(t.text), signalTextColor: SC.hex(t.text), noteBkgColor: SC.hex(t.surface2), noteTextColor: SC.hex(t.text) } });
+    // Render sequentially; each render needs a fresh id.
+    return outs.reduce((p, el) => p.then(() => mermaid.render('mm-svg-' + (++n), el.dataset.src).then(r => { el.innerHTML = r.svg; })), Promise.resolve());
+  }
+  SC.onTheme(() => draw().catch(e => SC.demoError('diagrams', e)));
+  return draw();
+};
+</script>
+<script>
+/* Tab: Math (KaTeX). */
+SC.renderers.math = function () {
+  'use strict';
+  SC.need(window.katex, 'KaTeX');
+  const input = document.getElementById('tex-in'), out = document.getElementById('tex-out');
+  const PRESETS = {
+    euler: String.raw`e^{i\pi} + 1 = 0`,
+    gauss: String.raw`\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}`,
+    binom: String.raw`(x+y)^n = \sum_{k=0}^{n} \binom{n}{k} x^{n-k} y^{k}`,
+  };
+  function render() {
+    const tmp = document.createElement('div');  // render detached so a bad edit can't leave half-drawn math
+    try {
+      katex.render(input.value, tmp, { displayMode: true, throwOnError: true });
+      out.replaceChildren(...tmp.childNodes);
+    } catch (e) {
+      const p = document.createElement('p'); p.className = 'math-err';
+      p.textContent = e && e.message ? e.message : String(e);
+      out.replaceChildren(p);
+    }
+  }
+  input.addEventListener('input', render);
+  document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => { input.value = PRESETS[b.dataset.preset]; render(); }));
+  render();
+};
+</script>
+<script>
+/* Tab: Markdown (Marked + highlight.js). The preview renders user-typed input, so Marked's HTML
+   is parsed into an inert <template> and filtered through a tag/attribute allowlist. */
+SC.renderers.markdown = function () {
+  'use strict';
+  SC.need(window.marked, 'Marked');
+  const input = document.getElementById('md-in'), out = document.getElementById('md-out'), status = document.getElementById('md-status');
+  const KEEP = new Set(['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL', 'LI', 'A', 'STRONG', 'B', 'EM', 'I', 'DEL', 'S', 'CODE', 'PRE',
+    'BLOCKQUOTE', 'TABLE', 'THEAD', 'TBODY', 'TR', 'TH', 'TD', 'HR', 'BR', 'IMG', 'SPAN', 'INPUT', 'SUP', 'SUB', 'KBD']);
+  const DROP = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'FRAME', 'FRAMESET', 'OBJECT', 'EMBED', 'LINK', 'META', 'BASE', 'FORM', 'TEMPLATE',
+    'NOSCRIPT', 'SVG', 'MATH', 'TEXTAREA', 'SELECT', 'BUTTON', 'VIDEO', 'AUDIO', 'SOURCE', 'TITLE']);
+  const ATTRS = { A: ['href', 'title'], IMG: ['src', 'alt', 'title'], CODE: ['class'], TH: ['align'], TD: ['align'], OL: ['start'], INPUT: ['type', 'checked'] };
+  function safeUrl(v, isImg) {
+    const s = String(v).replace(/[\u0000-\u0020\u007f-\u009f]/g, '').toLowerCase();  // defeats "java\tscript:" tricks
+    if (isImg) return /^data:image\/(png|gif|jpe?g|webp);/.test(s);                   // remote images are blocked anyway
+    const scheme = s.match(/^([a-z][a-z0-9+.-]*):/);
+    return !scheme || ['http', 'https', 'mailto', 'tel'].includes(scheme[1]);
+  }
+  function clean(root, stats) {
+    Array.from(root.childNodes).forEach(node => {
+      if (node.nodeType === 8) { node.remove(); return; }
+      if (node.nodeType !== 1) return;
+      const tag = node.tagName.toUpperCase();
+      if (DROP.has(tag)) { node.remove(); stats.n++; return; }
+      clean(node, stats);
+      if (!KEEP.has(tag) || (tag === 'INPUT' && node.getAttribute('type') !== 'checkbox')) { node.replaceWith(...node.childNodes); stats.n++; return; }
+      Array.from(node.attributes).forEach(a => {
+        const name = a.name.toLowerCase();
+        const ok = (ATTRS[tag] || []).includes(name)
+          && (name !== 'href' || safeUrl(a.value, false))
+          && (name !== 'src' || safeUrl(a.value, true))
+          && (name !== 'class' || /^language-[\w-]+$/.test(a.value));
+        if (!ok) { node.removeAttribute(a.name); stats.n++; }
+      });
+      if (tag === 'INPUT') node.setAttribute('disabled', '');
+      if (tag === 'A') node.setAttribute('rel', 'noopener noreferrer');
+    });
+  }
+  function render() {
+    const tpl = document.createElement('template');
+    tpl.innerHTML = marked.parse(input.value, { gfm: true });
+    const stats = { n: 0 };
+    clean(tpl.content, stats);
+    out.replaceChildren(tpl.content);  // moves the cleaned nodes; no re-serialization
+    if (window.hljs) out.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+    status.textContent = stats.n ? 'Sanitizer removed ' + stats.n + ' unsafe item' + (stats.n === 1 ? '' : 's') + '.' : '';
+  }
+  if (window.hljs) hljs.configure({ ignoreUnescapedHTML: true });
+  input.addEventListener('input', render);
+  render();
+};
+</script>
+<script>
+/* 3D caption: business hours vs off-peak, computed from the embedded data. */
+(function () {
+  const { days, values } = SC.DATA.credits;
+  let biz = 0, nb = 0, off = 0, no = 0, peak = { c: -1 };
+  values.forEach((row, di) => row.forEach((c, h) => {
+    if (h >= 8 && h <= 18 && days[di] !== 'Sat' && days[di] !== 'Sun') { biz += c; nb++; } else { off += c; no++; }
+    if (c > peak.c) peak = { c, d: days[di], h };
+  }));
+  document.getElementById('sky-summary').textContent = 'Weekday 08:00–18:59 averages ' + (biz / nb).toFixed(2) + ' credits/hour vs '
+    + (off / no).toFixed(2) + ' off-peak. Peak: ' + peak.d + ' ' + String(peak.h).padStart(2, '0') + ':00 at ' + peak.c.toFixed(2) + ' credits.';
+})();
+</script>
+<script>SC.boot();</script>
+<script type="module">
+/* Tab: 3D (Three.js). Built on first view; the render loop runs only while the tab is active,
+   the stage is on screen, and the page is visible. */
+import * as THREE from '/libs/three@0.169.0/three.module.min.js';
+
+const DATA = JSON.parse(document.getElementById('report-data').textContent);
+const stage = document.getElementById('skyline');
+const tip = document.getElementById('sky-tip');
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const NO_GL = "3D rendering isn't available in this browser. WebGL may be turned off.";
+let sky = null, running = false, inView = false;
+let tabActive = document.getElementById('showcase-tabs').dataset.active === '3d';
+
+function fallback(msg) { const p = document.createElement('p'); p.className = 'webgl-fallback'; p.textContent = msg; stage.replaceChildren(p); }
+function hasWebGL() { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } }
+
+function build() {
+  if (!hasWebGL()) { fallback(NO_GL); return null; }
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); } catch (e) { fallback(NO_GL); return null; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const canvas = renderer.domElement;
+  canvas.setAttribute('aria-label', '3D bar chart of hourly warehouse credits, 24 hours by 7 days');
+  stage.appendChild(canvas);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 300);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x556677, 1.15));
+  const sun = new THREE.DirectionalLight(0xffffff, 1.5); sun.position.set(10, 24, 14); scene.add(sun);
+
+  const { days, values } = DATA.credits;
+  const flat = values.flat(), lo = Math.min(...flat), hi = Math.max(...flat);
+  const C0 = new THREE.Color(0x0ea5e9), C1 = new THREE.Color(0x8b5cf6), C2 = new THREE.Color(0xf43f5e);
+  const ramp = t => t < 0.5 ? C0.clone().lerp(C1, t * 2) : C1.clone().lerp(C2, (t - 0.5) * 2);
+  const SX = 1, SZ = 1.35, H = 0.75;
+  const geo = new THREE.BoxGeometry(0.78, 1, 0.78); geo.translate(0, 0.5, 0);
+  const bars = [];
+  values.forEach((row, di) => row.forEach((c, h) => {
+    const mat = new THREE.MeshStandardMaterial({ color: ramp((c - lo) / (hi - lo)), roughness: 0.55, metalness: 0.05 });
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set((h - 11.5) * SX, 0, (di - 3) * SZ);
+    m.scale.y = reduceMotion ? c * H : 0.001;
+    m.userData = { day: days[di], hour: h, credits: c, target: c * H };
+    scene.add(m); bars.push(m);
+  }));
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(26, 7 * SZ + 1.6), new THREE.MeshBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.14 }));
+  floor.rotation.x = -Math.PI / 2; floor.position.y = -0.01; scene.add(floor);
+
+  function label(text, size) {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 96;
+    const g = c.getContext('2d');
+    g.font = '600 52px system-ui, -apple-system, sans-serif'; g.fillStyle = '#8094ad'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(text, 128, 48);
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+    s.scale.set(size * 2.67, size, 1); return s;
+  }
+  days.forEach((d, di) => { const s = label(d, 0.75); s.position.set(-13.6, 0.4, (di - 3) * SZ); scene.add(s); });
+  [0, 6, 12, 18, 23].forEach(h => { const s = label(String(h).padStart(2, '0') + ':00', 0.6); s.position.set((h - 11.5) * SX, 0.3, 3.5 * SZ + 0.9); scene.add(s); });
+
+  // Hand-rolled orbit (OrbitControls isn't in the vendored core module).
+  const target = new THREE.Vector3(0, 1.2, 0);
+  let theta = -0.55, phi = 1.0, radius = 30, dragging = false, moved = 0, lastX = 0, lastY = 0;
+  let lastInteract = performance.now(), hovered = null, last = performance.now();
+  const PHI_MIN = 0.35, PHI_MAX = 1.36;  // never orbit under the floor
+  function fit() {
+    const w = stage.clientWidth, h = stage.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+    const halfH = Math.atan(Math.tan(THREE.MathUtils.degToRad(19)) * camera.aspect);
+    radius = Math.max(24, (14 / Math.tan(halfH)) * 1.05);  // pull back on narrow screens
+  }
+  function place() {
+    camera.position.set(target.x + radius * Math.sin(phi) * Math.sin(theta), target.y + radius * Math.cos(phi), target.z + radius * Math.sin(phi) * Math.cos(theta));
+    camera.lookAt(target);
+  }
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  function pick(x, y) {
+    const r = canvas.getBoundingClientRect();
+    ndc.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    const hit = ray.intersectObjects(bars, false)[0];
+    const obj = hit ? hit.object : null;
+    if (hovered && hovered !== obj) hovered.material.emissive.setHex(0x000000);
+    hovered = obj;
+    if (!obj) { tip.hidden = true; return; }
+    obj.material.emissive.setHex(0x2a2a2a);
+    lastInteract = performance.now();
+    const u = obj.userData;
+    tip.textContent = u.day + ' ' + String(u.hour).padStart(2, '0') + ':00 · ' + u.credits.toFixed(2) + ' credits';
+    tip.hidden = false;
+    const px = x - r.left, py = y - r.top;
+    tip.style.left = Math.min(px + 14, r.width - tip.offsetWidth - 8) + 'px';
+    tip.style.top = Math.max(8, py - 34) + 'px';
+  }
+  canvas.addEventListener('pointerdown', e => { dragging = true; moved = 0; lastX = e.clientX; lastY = e.clientY; canvas.setPointerCapture(e.pointerId); tip.hidden = true; });
+  canvas.addEventListener('pointermove', e => {
+    if (!dragging) { pick(e.clientX, e.clientY); return; }
+    const dx = e.clientX - lastX, dy = e.clientY - lastY;
+    moved += Math.abs(dx) + Math.abs(dy); lastX = e.clientX; lastY = e.clientY;
+    theta -= dx * 0.008;
+    phi = Math.min(PHI_MAX, Math.max(PHI_MIN, phi - dy * 0.006));
+    lastInteract = performance.now();
+  });
+  const end = e => { if (dragging && moved < 5) pick(e.clientX, e.clientY); dragging = false; lastInteract = performance.now(); };
+  canvas.addEventListener('pointerup', end);
+  canvas.addEventListener('pointercancel', () => { dragging = false; });
+  canvas.addEventListener('pointerleave', () => { if (!dragging) { tip.hidden = true; if (hovered) { hovered.material.emissive.setHex(0); hovered = null; } } });
+
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const k = Math.min(1, dt * 4);
+    bars.forEach(b => { const d = b.userData.target - b.scale.y; if (Math.abs(d) > 1e-3) b.scale.y += d * k; });
+    if (!reduceMotion && !dragging && !hovered && now - lastInteract > 1500) theta += dt * 0.12;
+    place();
+    renderer.render(scene, camera);
+  }
+  new ResizeObserver(fit).observe(stage);
+  fit(); place();
+  return {
+    start() { last = performance.now(); renderer.setAnimationLoop(frame); },
+    stop() { renderer.setAnimationLoop(null); },
+  };
+}
+
+function sync() {
+  const want = tabActive && inView && !document.hidden;
+  if (want && !sky) { sky = build() || { start() {}, stop() {} }; }
+  if (!sky) return;
+  if (want && !running) { running = true; sky.start(); }
+  else if (!want && running) { running = false; sky.stop(); }
+}
+document.addEventListener('showcase:tab', e => { tabActive = e.detail.id === '3d'; sync(); });
+document.addEventListener('visibilitychange', sync);
+new IntersectionObserver(entries => { inView = entries[0].isIntersecting; sync(); }).observe(stage);
+</script>
+</body>
+</html>

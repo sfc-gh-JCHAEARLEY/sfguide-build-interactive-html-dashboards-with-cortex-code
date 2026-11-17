@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="snowflake-source" content="cortex-agent-authored" />
+  <title>Weekly digest · Product spec</title>
+  <script type="application/json" id="snowflake-report-metadata">
+  {
+    "generated": "2026-11-17",
+    "intent": "Designed product spec page for the 'Weekly digest' feature showing requirement 2 of 4, with a working settings-panel prototype (toggle off by default, off-state text, Mon-Fri day picker, live 'Next digest' line, animated knob and panel)",
+    "sections": [
+      { "id": "requirement", "title": "Requirement 2 of 4: Let users opt into a weekly digest",
+        "producerNotes": "Static spec copy taken verbatim from the request. No data source. Requirements 1, 3 and 4 were not provided, so the progress indicator only marks position." },
+      { "id": "prototype", "title": "Prototype: Settings · Notifications",
+        "producerNotes": "Client-side prototype only; no data, no persistence. Delivery time is fixed at 9:00 AM. Day selection is kept if the digest is turned off and on again." }
+    ]
+  }
+  </script>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: light-dark(#f4f6f9, #0b111c);
+      --card: light-dark(#ffffff, #131b2b);
+      --ink: light-dark(#0f172a, #eef2f7);
+      --muted: light-dark(#5f6b7d, #95a1b4);
+      --line: light-dark(#dde3eb, #263248);
+      --soft: light-dark(#eef2f7, #1b2537);
+      --accent: light-dark(#0b7fb5, #3fb9ec);
+      --accent-soft: light-dark(#e2f3fb, #0f3550);
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      line-height: 1.5;
+    }
+    img, svg { max-width: 100%; height: auto; }
+    .page {
+      max-width: 1040px;
+      width: 100%;
+      margin: 0 auto;
+      padding: clamp(16px, 4vw, 40px);
+    }
+
+    /* Header */
+    .spec-header { margin-bottom: clamp(20px, 4vw, 36px); }
+    .eyebrow {
+      margin: 0 0 6px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    h1 { margin: 0; font-size: clamp(30px, 5vw, 46px); line-height: 1.1; letter-spacing: -.02em; }
+    .progress { display: flex; align-items: center; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+    .progress-label { font-size: 14px; color: var(--muted); font-weight: 600; }
+    .progress-bar { display: flex; gap: 4px; }
+    .progress-bar span { width: 28px; height: 5px; border-radius: 999px; background: var(--line); }
+    .progress-bar span.done { background: light-dark(#9ccbe4, #2a5f80); }
+    .progress-bar span.current { background: var(--accent); }
+
+    /* Two columns, stacking on narrow screens */
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: clamp(20px, 4vw, 40px);
+      align-items: start;
+    }
+    @media (max-width: 760px) {
+      .layout { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    /* Requirement text */
+    .req-tag {
+      display: inline-block;
+      margin: 0 0 10px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .04em;
+    }
+    .requirement h2 { margin: 0 0 18px; font-size: clamp(22px, 3vw, 30px); line-height: 1.25; letter-spacing: -.01em; }
+    .criteria { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+    .criteria li {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--card);
+      font-size: 16px;
+    }
+    .criteria svg { width: 22px; height: 22px; color: var(--accent); margin-top: 1px; }
+
+    /* Prototype frame */
+    .proto-label {
+      margin: 0 0 10px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--card);
+      box-shadow: 0 12px 32px light-dark(rgba(15, 23, 42, .08), rgba(0, 0, 0, .35));
+      overflow: hidden;
+    }
+    .panel-head {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      background: var(--soft);
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .panel-head .crumb { color: var(--muted); font-weight: 500; }
+    .panel-body { padding: 18px; }
+
+    .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .setting-row .name { font-weight: 600; font-size: 16px; }
+    .setting-row .desc { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+
+    /* Toggle switch */
+    .switch {
+      flex: none;
+      position: relative;
+      width: 48px;
+      height: 28px;
+      padding: 0;
+      border: 0;
+      border-radius: 999px;
+      background: light-dark(#c3ccd8, #3a475c);
+      cursor: pointer;
+      transition: background-color 220ms var(--ease);
+    }
+    .switch .knob {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
+      transition: transform 220ms var(--ease);
+    }
+    .switch[aria-checked="true"] { background: var(--accent); }
+    .switch[aria-checked="true"] .knob { transform: translateX(20px); }
+    .switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    /* Expand / collapse: animate grid row from 0fr to 1fr */
+    .collapse {
+      display: grid;
+      grid-template-rows: 0fr;
+      opacity: 0;
+      transition: grid-template-rows 280ms var(--ease), opacity 220ms ease;
+    }
+    .collapse.open { grid-template-rows: 1fr; opacity: 1; }
+    .collapse > .inner { overflow: hidden; min-height: 0; }
+
+    .off-text { margin: 0; padding-top: 14px; font-size: 14px; color: var(--muted); }
+
+    .options { padding-top: 18px; margin-top: 16px; border-top: 1px solid var(--line); }
+    .field-label { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+
+    /* Segmented day picker */
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      padding: 3px;
+      gap: 3px;
+      border-radius: 10px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+    }
+    .segmented button {
+      min-width: 0;
+      padding: 8px 0;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+    }
+    .segmented button:hover { color: var(--ink); }
+    .segmented button[aria-checked="true"] {
+      background: var(--card);
+      color: var(--accent);
+      box-shadow: 0 1px 3px light-dark(rgba(15, 23, 42, .15), rgba(0, 0, 0, .5));
+    }
+    .segmented button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+    .next-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 14px 0 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--accent-soft);
+      font-size: 14px;
+    }
+    .next-line svg { width: 16px; height: 16px; color: var(--accent); flex: none; }
+    .next-line strong { font-weight: 600; }
+
+    .proto-hint { margin: 10px 2px 0; font-size: 12px; color: var(--muted); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .switch, .switch .knob, .collapse, .segmented button { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="spec-header">
+      <p class="eyebrow">Product spec</p>
+      <h1>Weekly digest</h1>
+      <div class="progress">
+        <span class="progress-label">Requirement 2 of 4</span>
+        <span class="progress-bar" aria-hidden="true"><span class="done"></span><span class="current"></span><span></span><span></span></span>
+      </div>
+    </header>
+
+    <div class="layout">
+      <section class="requirement" id="requirement" aria-labelledby="req-title">
+        <p class="req-tag">Requirement 2</p>
+        <h2 id="req-title">Let users opt into a weekly digest</h2>
+        <ul class="criteria">
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9.7"/></svg>
+            <span>Off by default</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9.7"/></svg>
+            <span>Delivery day: Monday to Friday</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9.7"/></svg>
+            <span>Shows the top three reports by views</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="prototype" id="prototype" aria-label="Prototype">
+        <p class="proto-label">Prototype</p>
+        <div class="panel">
+          <div class="panel-head"><span class="crumb">Settings</span> · Notifications</div>
+          <div class="panel-body">
+            <div class="setting-row">
+              <div>
+                <div class="name" id="digest-label">Weekly digest</div>
+                <p class="desc" id="digest-desc">An email with your top three reports by views.</p>
+              </div>
+              <button type="button" class="switch" id="digest-toggle" role="switch" aria-checked="false" aria-labelledby="digest-label" aria-describedby="digest-desc">
+                <span class="knob" aria-hidden="true"></span>
+              </button>
+            </div>
+
+            <div class="collapse open" id="off-state">
+              <div class="inner">
+                <p class="off-text">Turn on the digest to see delivery options.</p>
+              </div>
+            </div>
+
+            <div class="collapse" id="options" aria-hidden="true" inert>
+              <div class="inner">
+                <div class="options">
+                  <p class="field-label" id="day-label">Delivery day</p>
+                  <div class="segmented" id="day-picker" role="radiogroup" aria-labelledby="day-label">
+                    <button type="button" role="radio" data-day="Monday" aria-checked="true" tabindex="0">Mon</button>
+                    <button type="button" role="radio" data-day="Tuesday" aria-checked="false" tabindex="-1">Tue</button>
+                    <button type="button" role="radio" data-day="Wednesday" aria-checked="false" tabindex="-1">Wed</button>
+                    <button type="button" role="radio" data-day="Thursday" aria-checked="false" tabindex="-1">Thu</button>
+                    <button type="button" role="radio" data-day="Friday" aria-checked="false" tabindex="-1">Fri</button>
+                  </div>
+                  <p class="next-line">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+                    <span id="next-digest" aria-live="polite"><strong>Next digest:</strong> Monday, 9:00 AM</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="proto-hint">Interactive prototype. Settings are not saved.</p>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      var toggle = document.getElementById('digest-toggle');
+      var offState = document.getElementById('off-state');
+      var options = document.getElementById('options');
+      var nextDigest = document.getElementById('next-digest');
+      var days = Array.prototype.slice.call(document.querySelectorAll('#day-picker [role="radio"]'));
+
+      function setOpen(el, open) {
+        el.classList.toggle('open', open);
+        el.setAttribute('aria-hidden', String(!open));
+        if (open) el.removeAttribute('inert');
+        else el.setAttribute('inert', '');
+      }
+
+      function setEnabled(on) {
+        toggle.setAttribute('aria-checked', String(on));
+        setOpen(options, on);
+        setOpen(offState, !on);
+      }
+
+      function selectDay(index, focus) {
+        days.forEach(function (btn, i) {
+          var selected = i === index;
+          btn.setAttribute('aria-checked', String(selected));
+          btn.tabIndex = selected ? 0 : -1;
+        });
+        nextDigest.innerHTML = '';
+        var label = document.createElement('strong');
+        label.textContent = 'Next digest:';
+        nextDigest.appendChild(label);
+        nextDigest.appendChild(document.createTextNode(' ' + days[index].dataset.day + ', 9:00 AM'));
+        if (focus) days[index].focus();
+      }
+
+      toggle.addEventListener('click', function () {
+        setEnabled(toggle.getAttribute('aria-checked') !== 'true');
+      });
+
+      days.forEach(function (btn, i) {
+        btn.addEventListener('click', function () { selectDay(i, false); });
+        // Standard radio-group keys, scoped to the picker so they never affect other controls.
+        btn.addEventListener('keydown', function (e) {
+          var target = null;
+          if (e.key === 'ArrowRight' || e.key === 'ArrowDown') target = (i + 1) % days.length;
+          else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') target = (i - 1 + days.length) % days.length;
+          else if (e.key === 'Home') target = 0;
+          else if (e.key === 'End') target = days.length - 1;
+          if (target === null) return;
+          e.preventDefault();
+          selectDay(target, true);
+        });
+      });
+
+      setEnabled(false);
+      selectDay(0, false);
+    })();
+  </script>
+</body>
+</html>

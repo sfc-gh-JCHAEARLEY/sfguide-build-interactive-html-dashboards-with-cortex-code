@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="snowflake-source" content="cortex-agent-authored" />
+  <title>Q3 FY26 Revenue Review</title>
+  <script type="application/json" id="snowflake-report-metadata">
+  {
+    "generated": "2026-11-17",
+    "intent": "Q3 FY26 revenue review (July 1 to September 30, 2026): KPIs, a What changed vs Q2 callout, revenue by region (top region highlighted, $M data labels), revenue share by segment, and a sortable region x segment summary table",
+    "parameters": { "startDate": "2026-07-01", "endDate": "2026-09-30", "comparisonStartDate": "2026-04-01", "comparisonEndDate": "2026-06-30", "dateColumn": "order_date (inclusive range)", "highlightRegion": "top region by Q3 revenue (computed; currently APAC)" },
+    "dataSources": [
+      { "type": "table", "name": "HTML_REPORTS_QS.DEMO.SALES" }
+    ],
+    "sections": [
+      { "id": "summary", "title": "Header and executive summary",
+        "dataSources": [
+          { "type": "query", "sql": "SELECT SUM(revenue_usd) AS total_revenue, COUNT(*) AS order_count, AVG(revenue_usd) AS avg_order_value, MIN(order_date) AS first_order, MAX(order_date) AS last_order\nFROM HTML_REPORTS_QS.DEMO.SALES\nWHERE order_date BETWEEN '2026-07-01' AND '2026-09-30'" }
+        ],
+        "producerNotes": "Executive summary sentence is hand-written from the KPI, region, and segment query results; rewrite it after a refresh." },
+      { "id": "kpis", "title": "KPI row",
+        "dataSources": [
+          { "type": "query", "sql": "SELECT SUM(revenue_usd) AS total_revenue, COUNT(*) AS order_count, AVG(revenue_usd) AS avg_order_value, MIN(order_date) AS first_order, MAX(order_date) AS last_order\nFROM HTML_REPORTS_QS.DEMO.SALES\nWHERE order_date BETWEEN '2026-07-01' AND '2026-09-30'" }
+        ],
+        "producerNotes": "Total revenue, order count, and AOV come from this query. Top region is the first row of the revenue-by-region query. Display formats: total revenue in $M with one decimal ($127.3M), order count as an integer (5,047), AOV in whole dollars ($25,228), top region name with its revenue underneath in $M with one decimal ($34.3M). Values are inlined in the KPI script (const KPIS) and in the HTML as the no-JS fallback." },
+      { "id": "vs-q2", "title": "What changed vs Q2",
+        "dataSources": [
+          { "type": "query", "sql": "SELECT IFF(order_date < '2026-07-01', 'Q2', 'Q3') AS quarter,\n  SUM(revenue_usd) AS total_revenue, COUNT(*) AS order_count, AVG(revenue_usd) AS avg_order_value\nFROM HTML_REPORTS_QS.DEMO.SALES\nWHERE order_date BETWEEN '2026-04-01' AND '2026-09-30'\nGROUP BY quarter\nORDER BY quarter" },
+          { "type": "query", "sql": "SELECT 'region' AS dim, region AS name,\n  SUM(IFF(order_date < '2026-07-01', revenue_usd, 0)) AS q2_revenue,\n  SUM(IFF(order_date >= '2026-07-01', revenue_usd, 0)) AS q3_revenue\nFROM HTML_REPORTS_QS.DEMO.SALES\nWHERE order_date BETWEEN '2026-04-01' AND '2026-09-30'\nGROUP BY region\nUNION ALL\nSELECT 'segment', segment,\n  SUM(IFF(order_date < '2026-07-01', revenue_usd, 0)),\n  SUM(IFF(order_date >= '2026-07-01', revenue_usd, 0))\nFROM HTML_REPORTS_QS.DEMO.SALES\nWHERE order_date BETWEEN '2026-04-01' AND '2026-09-30'\nGROUP BY segment\nORDER BY dim, name" }
+        ],
+        "producerNotes": "Q2 = 2026-04-01..2026-06-30, Q3 = 2026-07-01..2026-09-30 (calendar quarters, matching the report's Q3 date range). Three bullets as requested: total revenue, the biggest regional mover, and any segment that declined. Hand-written from these results: Q2 total $124,333,565.10 vs Q3 $127,325,282.93 (+$2,991,717.83, +2.41%); region Q2->Q3: APAC +$4,506,887.43 (+15.11%), LATAM +7.89%, North America -4.01%, EMEA -$2,682,054.00 (-8.40%), so APAC is the biggest mover by both absolute and percent change; Q2 region rank was EMEA, North America, LATAM, APAC. Segments: Enterprise +5.77%, SMB +4.71%, Mid-market -$1,339,618.41 (-3.21%, the only decline). Rewrite the bullets after a refresh." },
+      { "id": "revenue-by-region", "title": "Revenue by region",
+        "dataSources": [
+          { "type": "query", "sql": "SELECT region, SUM(revenue_usd) AS revenue, COUNT(*) AS orders\nFROM HTML_REPORTS_QS.DEMO.SALES\nWHERE order_date BETWEEN '2026-07-01' AND '2026-09-30'\nGROUP BY region\nORDER BY revenue DESC" }
+        ],
+        "producerNotes": "Bar values inlined in const REGIONS, sorted descending by revenue. Orders feed the tooltip. The top region (HIGHLIGHT, computed as the max-revenue row, currently APAC) is drawn in the accent color, other regions muted gray. Data labels above bars are revenue in $M with one decimal (e.g. $34.3M), drawn by the inline barLabels Chart.js plugin." },
+      { "id": "segment-share", "title": "Revenue share by segment",
+        "dataSources": [
+          { "type": "query", "sql": "SELECT segment, SUM(revenue_usd) AS revenue, RATIO_TO_REPORT(SUM(revenue_usd)) OVER () AS share\nFROM HTML_REPORTS_QS.DEMO.SALES\nWHERE order_date BETWEEN '2026-07-01' AND '2026-09-30'\nGROUP BY segment\nORDER BY revenue DESC" }
+        ],
+        "producerNotes": "Doughnut values inlined in const SEGMENTS." },
+      { "id": "region-segment-table", "title": "Region x segment revenue",
+        "dataSources": [
+          { "type": "query", "sql": "SELECT region,\n  SUM(IFF(segment = 'Enterprise', revenue_usd, 0)) AS enterprise,\n  SUM(IFF(segment = 'Mid-market', revenue_usd, 0)) AS mid_market,\n  SUM(IFF(segment = 'SMB', revenue_usd, 0)) AS smb,\n  SUM(revenue_usd) AS total\nFROM HTML_REPORTS_QS.DEMO.SALES\nWHERE order_date BETWEEN '2026-07-01' AND '2026-09-30'\nGROUP BY region\nORDER BY total DESC" }
+        ],
+        "producerNotes": "Table rows are static HTML rounded to whole dollars, each cell carrying the exact value in data-value for sorting; the totals row (tfoot) is the column sums and stays pinned below sorted rows. Click a column header to sort; initial order is Total descending." }
+    ]
+  }
+  </script>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: light-dark(#f6f7f9, #0f141b);
+      --card: light-dark(#ffffff, #171e28);
+      --text: light-dark(#1f2937, #e5e7eb);
+      --heading: light-dark(#0f172a, #f1f5f9);
+      --muted: light-dark(#6b7280, #9ca3af);
+      --border: light-dark(#e5e7eb, #2b3442);
+      --grid: light-dark(#eceef1, #253040);
+      --accent: light-dark(#1a8fc4, #29b5e8);
+      --seg-1: light-dark(#1a8fc4, #29b5e8);
+      --seg-2: light-dark(#7254a3, #a78bdb);
+      --seg-3: light-dark(#e07b1a, #ffa94d);
+      --gray: light-dark(#c9ced6, #4a5361);
+      --callout-bg: light-dark(#eef7fc, #132433);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      line-height: 1.5;
+    }
+    .page { max-width: 1040px; width: 100%; margin: 0 auto; padding: clamp(16px, 4vw, 32px); }
+    h1, h2, h3 { color: var(--heading); margin: 0; }
+    img, svg { max-width: 100%; height: auto; }
+
+    header.report-header { margin-bottom: 24px; }
+    .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin: 0 0 6px; }
+    header h1 { font-size: clamp(26px, 4.5vw, 34px); line-height: 1.15; }
+    .date-range { margin: 6px 0 14px; color: var(--muted); font-size: 15px; }
+    .exec-summary { margin: 0; max-width: 72ch; font-size: 16px; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 0 0 24px; }
+    .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+    .kpi-label { font-size: 13px; color: var(--muted); margin: 0 0 6px; }
+    .kpi-value { font-size: clamp(24px, 3.2vw, 30px); font-weight: 700; color: var(--heading); margin: 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .kpi-sub { font-size: 13px; color: var(--muted); margin: 4px 0 0; font-variant-numeric: tabular-nums; }
+
+    .callout {
+      margin: 0 0 24px; padding: 16px 20px;
+      background: var(--callout-bg); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 10px;
+    }
+    .callout h2 { font-size: 16px; margin: 0 0 8px; }
+    .callout ul { margin: 0; padding-left: 20px; }
+    .callout li { margin: 4px 0; }
+    .callout li::marker { color: var(--accent); }
+    .up { color: light-dark(#15803d, #4ade80); font-weight: 600; }
+    .down { color: light-dark(#b91c1c, #f87171); font-weight: 600; }
+
+    .chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 0 0 24px; }
+    @media (max-width: 760px) { .chart-grid { grid-template-columns: 1fr; } }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; min-width: 0; }
+    .card h2 { font-size: 17px; margin-bottom: 2px; }
+    .card .card-sub { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+    .chart-box { position: relative; width: 100%; height: 300px; }
+    .chart-box > canvas { width: 100% !important; height: 100% !important; }
+
+    details.sql { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 10px; }
+    details.sql summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent); width: fit-content; }
+    details.sql summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+    details.sql pre {
+      margin: 10px 0 0; padding: 12px 14px; overflow-x: auto;
+      background: light-dark(#f3f4f6, #0f141b); border: 1px solid var(--border); border-radius: 8px;
+      font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text);
+    }
+
+    .table-wrap { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; min-width: 560px; font-variant-numeric: tabular-nums; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+    th:first-child, td:first-child { text-align: left; }
+    thead th { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; }
+    tbody th { font-weight: 600; text-align: left; }
+    thead th { padding: 0; }
+    .sort-btn {
+      all: unset; box-sizing: border-box; display: flex; width: 100%; padding: 10px 12px; gap: 6px;
+      justify-content: flex-end; align-items: center; cursor: pointer;
+      font: inherit; text-transform: inherit; letter-spacing: inherit; color: inherit;
+    }
+    th:first-child .sort-btn { justify-content: flex-start; }
+    .sort-btn:hover { color: var(--heading); }
+    .sort-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 4px; }
+    .sort-arrow { display: inline-block; width: 1em; text-align: center; opacity: .35; }
+    th[aria-sort="ascending"] .sort-btn, th[aria-sort="descending"] .sort-btn { color: var(--heading); }
+    th[aria-sort="ascending"] .sort-arrow, th[aria-sort="descending"] .sort-arrow { opacity: 1; color: var(--accent); }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    tbody tr:hover { background: light-dark(#f8fafc, #1c2532); }
+    tfoot td { font-weight: 700; color: var(--heading); border-top: 2px solid var(--text); border-bottom: 0; }
+
+    footer { margin-top: 24px; font-size: 12px; color: var(--muted); }
+    .probe { position: absolute; width: 0; height: 0; overflow: hidden; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="report-header" id="summary">
+    <p class="eyebrow">Revenue review</p>
+    <h1>Q3 FY26 Revenue Review</h1>
+    <p class="date-range">July 1 – September 30, 2026</p>
+    <p class="exec-summary">Q3 closed at <strong>$127.3M</strong> in revenue across <strong>5,047 orders</strong>, led by APAC at $34.3M (27.0% of total), with revenue spread evenly across regions (23–27% each) and segments (32–35% each).</p>
+  </header>
+
+  <section class="kpi-row" id="kpis" aria-label="Key metrics">
+    <div class="kpi">
+      <p class="kpi-label">Total revenue</p>
+      <p class="kpi-value" data-kpi="revenue">$127.3M</p>
+    </div>
+    <div class="kpi">
+      <p class="kpi-label">Order count</p>
+      <p class="kpi-value" data-kpi="orders">5,047</p>
+    </div>
+    <div class="kpi">
+      <p class="kpi-label">Average order value</p>
+      <p class="kpi-value" data-kpi="aov">$25,228</p>
+    </div>
+    <div class="kpi">
+      <p class="kpi-label">Top region</p>
+      <p class="kpi-value">APAC</p>
+      <p class="kpi-sub" data-kpi="top">$34.3M</p>
+    </div>
+  </section>
+
+  <aside class="callout" id="vs-q2" aria-labelledby="vs-q2-title">
+    <h2 id="vs-q2-title">What changed vs Q2</h2>
+    <ul>
+      <li><strong>Total revenue:</strong> $127.3M, up <span class="up">+2.4%</span> (+$3.0M) from Q2&rsquo;s $124.3M.</li>
+      <li><strong>Biggest regional mover:</strong> APAC, up <span class="up">+15.1%</span> (+$4.5M) to $34.3M, rising from last place in Q2 to first.</li>
+      <li><strong>Declining segment:</strong> Mid-market, down <span class="down">&minus;3.2%</span> (&minus;$1.3M) to $40.4M, the only segment that declined.</li>
+    </ul>
+  </aside>
+
+  <div class="chart-grid">
+    <section class="card" id="revenue-by-region">
+      <h2>Revenue by region</h2>
+      <p class="card-sub">Q3 FY26, sorted by revenue (descending) · top region highlighted</p>
+      <div class="chart-box"><canvas id="regionChart" role="img" aria-label="Bar chart of Q3 revenue by region, top region APAC highlighted: APAC $34.3M, LATAM $33.3M, North America $30.4M, EMEA $29.2M"></canvas></div>
+      <details class="sql">
+        <summary>View SQL</summary>
+<pre><code>SELECT region, SUM(revenue_usd) AS revenue, COUNT(*) AS orders
+FROM HTML_REPORTS_QS.DEMO.SALES
+WHERE order_date BETWEEN '2026-07-01' AND '2026-09-30'
+GROUP BY region
+ORDER BY revenue DESC</code></pre>
+      </details>
+    </section>
+
+    <section class="card" id="segment-share">
+      <h2>Revenue share by segment</h2>
+      <p class="card-sub">Q3 FY26, share of total revenue</p>
+      <div class="chart-box"><canvas id="segmentChart" role="img" aria-label="Doughnut chart of Q3 revenue share by segment: Enterprise 34.8%, SMB 33.5%, Mid-market 31.8%"></canvas></div>
+      <details class="sql">
+        <summary>View SQL</summary>
+<pre><code>SELECT segment, SUM(revenue_usd) AS revenue, RATIO_TO_REPORT(SUM(revenue_usd)) OVER () AS share
+FROM HTML_REPORTS_QS.DEMO.SALES
+WHERE order_date BETWEEN '2026-07-01' AND '2026-09-30'
+GROUP BY segment
+ORDER BY revenue DESC</code></pre>
+      </details>
+    </section>
+  </div>
+
+  <section class="card" id="region-segment-table">
+    <h2>Revenue by region and segment</h2>
+    <p class="card-sub">Q3 FY26, USD rounded to whole dollars · click a column header to sort</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th scope="col"><button type="button" class="sort-btn" data-col="0" data-type="text">Region<span class="sort-arrow" aria-hidden="true">&#8597;</span></button></th><th scope="col"><button type="button" class="sort-btn" data-col="1" data-type="num">Enterprise<span class="sort-arrow" aria-hidden="true">&#8597;</span></button></th><th scope="col"><button type="button" class="sort-btn" data-col="2" data-type="num">Mid-market<span class="sort-arrow" aria-hidden="true">&#8597;</span></button></th><th scope="col"><button type="button" class="sort-btn" data-col="3" data-type="num">SMB<span class="sort-arrow" aria-hidden="true">&#8597;</span></button></th><th scope="col" aria-sort="descending"><button type="button" class="sort-btn" data-col="4" data-type="num">Total<span class="sort-arrow" aria-hidden="true">&#9660;</span></button></th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row" data-value="APAC">APAC</th><td data-value="12448525.62">$12,448,526</td><td data-value="10447822.52">$10,447,823</td><td data-value="11445334.77">$11,445,335</td><td data-value="34341682.91">$34,341,683</td></tr>
+          <tr><th scope="row" data-value="LATAM">LATAM</th><td data-value="11561430.18">$11,561,430</td><td data-value="10805872.21">$10,805,872</td><td data-value="10945975.46">$10,945,975</td><td data-value="33313277.85">$33,313,278</td></tr>
+          <tr><th scope="row" data-value="North America">North America</th><td data-value="11029470.68">$11,029,471</td><td data-value="9169467.09">$9,169,467</td><td data-value="10222724.01">$10,222,724</td><td data-value="30421661.78">$30,421,662</td></tr>
+          <tr><th scope="row" data-value="EMEA">EMEA</th><td data-value="9224287.74">$9,224,288</td><td data-value="10016047.57">$10,016,048</td><td data-value="10008325.08">$10,008,325</td><td data-value="29248660.39">$29,248,660</td></tr>
+        </tbody>
+        <tfoot>
+          <tr><td>Total</td><td>$44,263,714</td><td>$40,439,209</td><td>$42,622,359</td><td>$127,325,283</td></tr>
+        </tfoot>
+      </table>
+    </div>
+    <p class="sr-only" id="sort-status" role="status" aria-live="polite"></p>
+  </section>
+
+  <footer>
+    Source: HTML_REPORTS_QS.DEMO.SALES, order_date July 1 – September 30, 2026 (inclusive). Data as queried on November 17, 2026. Cells may not sum exactly to totals because of rounding to whole dollars.
+  </footer>
+
+  <!-- Hidden color probes: lets the canvas charts read resolved light-dark() colors -->
+  <div class="probe" aria-hidden="true">
+    <span data-probe="text" style="color: var(--text)"></span>
+    <span data-probe="muted" style="color: var(--muted)"></span>
+    <span data-probe="grid" style="color: var(--grid)"></span>
+    <span data-probe="card" style="color: var(--card)"></span>
+    <span data-probe="accent" style="color: var(--accent)"></span>
+    <span data-probe="gray" style="color: var(--gray)"></span>
+    <span data-probe="seg1" style="color: var(--seg-1)"></span>
+    <span data-probe="seg2" style="color: var(--seg-2)"></span>
+    <span data-probe="seg3" style="color: var(--seg-3)"></span>
+  </div>
+</div>
+
+<script src="/libs/chart.js@4.4.4/chart.umd.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // ---- Data (inlined from the queries recorded in snowflake-report-metadata) ----
+  var KPIS = {
+    revenue: 127325282.93,
+    orders: 5047,
+    aov: 25227.91419259,
+    topRevenue: 34341682.91
+  };
+  var REGIONS = [
+    { region: 'APAC', revenue: 34341682.91, orders: 1356 },
+    { region: 'LATAM', revenue: 33313277.85, orders: 1294 },
+    { region: 'North America', revenue: 30421661.78, orders: 1199 },
+    { region: 'EMEA', revenue: 29248660.39, orders: 1198 }
+  ];
+  var SEGMENTS = [
+    { segment: 'Enterprise', revenue: 44263714.22, share: 0.34764277 },
+    { segment: 'SMB', revenue: 42622359.32, share: 0.33475173 },
+    { segment: 'Mid-market', revenue: 40439209.39, share: 0.31760549 }
+  ];
+
+  // Top region = highest Q3 revenue (computed so a refresh keeps the highlight correct).
+  var HIGHLIGHT = REGIONS.reduce(function (a, b) { return b.revenue > a.revenue ? b : a; }).region;
+
+  var usd0 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+  var int0 = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+  function usdM(v) { return '$' + (v / 1e6).toFixed(1) + 'M'; }
+
+  // ---- KPI count-up: 0 -> value over ~1s, ease-out cubic ----
+  var counters = [
+    { key: 'revenue', to: KPIS.revenue, fmt: function (v) { return usdM(v); } },
+    { key: 'orders', to: KPIS.orders, fmt: function (v) { return int0.format(v); } },
+    { key: 'aov', to: KPIS.aov, fmt: function (v) { return usd0.format(v); } },
+    { key: 'top', to: KPIS.topRevenue, fmt: function (v) { return usdM(v); } }
+  ];
+  counters.forEach(function (c) {
+    c.el = document.querySelector('[data-kpi="' + c.key + '"]');
+    c.final = c.fmt(c.to);   // exact final string, also what the no-JS HTML shows
+  });
+
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var DURATION = 1000;
+  function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+  if (reduceMotion) {
+    counters.forEach(function (c) { c.el.textContent = c.final; });
+  } else {
+    counters.forEach(function (c) { c.el.textContent = c.fmt(0); });
+    var start = null;
+    var tick = function (now) {
+      if (start === null) start = now;
+      var t = Math.min(1, (now - start) / DURATION);
+      var e = easeOutCubic(t);
+      counters.forEach(function (c) {
+        c.el.textContent = t < 1 ? c.fmt(c.to * e) : c.final;   // land exactly on the final value
+      });
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  // ---- Sortable summary table (totals row lives in <tfoot> and stays at the bottom) ----
+  (function () {
+    var table = document.querySelector('#region-segment-table table');
+    var tbody = table.tBodies[0];
+    var headers = Array.prototype.slice.call(table.querySelectorAll('thead th'));
+    var status = document.getElementById('sort-status');
+    var ARROWS = { ascending: '\u25B2', descending: '\u25BC', none: '\u2195' };
+
+    headers.forEach(function (th) {
+      var btn = th.querySelector('.sort-btn');
+      btn.addEventListener('click', function () {
+        var col = Number(btn.getAttribute('data-col'));
+        var isNum = btn.getAttribute('data-type') === 'num';
+        var current = th.getAttribute('aria-sort');
+        // First click: numbers sort high-to-low, text A-Z. Further clicks toggle.
+        var dir = current === 'descending' ? 'ascending'
+                : current === 'ascending' ? 'descending'
+                : (isNum ? 'descending' : 'ascending');
+        var rows = Array.prototype.slice.call(tbody.rows);
+        rows.sort(function (a, b) {
+          var va = a.cells[col].getAttribute('data-value');
+          var vb = b.cells[col].getAttribute('data-value');
+          var cmp = isNum ? Number(va) - Number(vb) : va.localeCompare(vb);
+          return dir === 'ascending' ? cmp : -cmp;
+        });
+        rows.forEach(function (r) { tbody.appendChild(r); });
+        headers.forEach(function (h) {
+          var arrow = h.querySelector('.sort-arrow');
+          if (h === th) {
+            h.setAttribute('aria-sort', dir);
+            arrow.textContent = ARROWS[dir];
+          } else {
+            h.removeAttribute('aria-sort');
+            arrow.textContent = ARROWS.none;
+          }
+        });
+        status.textContent = 'Sorted by ' + btn.textContent.replace(/[\u25B2\u25BC\u2195]/g, '').trim() + ', ' + dir + '.';
+      });
+    });
+  })();
+
+  // ---- Theme colors resolved from CSS light-dark() via probes ----
+  function readTheme() {
+    var t = {};
+    document.querySelectorAll('[data-probe]').forEach(function (el) {
+      t[el.getAttribute('data-probe')] = getComputedStyle(el).color;
+    });
+    return t;
+  }
+
+  if (typeof Chart === 'undefined') return;
+  var theme = readTheme();
+  Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+
+  function barColors() {
+    return REGIONS.map(function (r) { return r.region === HIGHLIGHT ? theme.accent : theme.gray; });
+  }
+
+  // Inline plugin: draws a $M (one decimal) data label centered above each bar (follows the grow-in animation).
+  var barLabels = {
+    id: 'barLabels',
+    afterDatasetsDraw: function (chart) {
+      var ctx = chart.ctx;
+      var meta = chart.getDatasetMeta(0);
+      var values = chart.data.datasets[0].data;
+      ctx.save();
+      ctx.font = '600 ' + (chart.width < 340 ? 11 : 12) + 'px ' + Chart.defaults.font.family;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      meta.data.forEach(function (bar, i) {
+        ctx.fillStyle = chart.data.labels[i] === HIGHLIGHT ? theme.text : theme.muted;
+        ctx.fillText(usdM(values[i]), bar.x, bar.y - 6);
+      });
+      ctx.restore();
+    }
+  };
+
+  var regionChart = new Chart(document.getElementById('regionChart'), {
+    type: 'bar',
+    data: {
+      labels: REGIONS.map(function (r) { return r.region; }),
+      datasets: [{
+        label: 'Revenue',
+        data: REGIONS.map(function (r) { return r.revenue; }),
+        backgroundColor: barColors(),
+        borderRadius: 6,
+        maxBarThickness: 64
+      }]
+    },
+    plugins: [barLabels],
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { top: 24 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function (ctx) {
+              var r = REGIONS[ctx.dataIndex];
+              return usd0.format(r.revenue) + ' · ' + int0.format(r.orders) + ' orders';
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: theme.muted } },
+        y: {
+          beginAtZero: true,
+          grid: { color: theme.grid },
+          border: { display: false },
+          ticks: { color: theme.muted, callback: function (v) { return '$' + (v / 1e6) + 'M'; } }
+        }
+      }
+    }
+  });
+
+  var segmentChart = new Chart(document.getElementById('segmentChart'), {
+    type: 'doughnut',
+    data: {
+      labels: SEGMENTS.map(function (s) { return s.segment; }),
+      datasets: [{
+        data: SEGMENTS.map(function (s) { return s.revenue; }),
+        backgroundColor: [theme.seg1, theme.seg2, theme.seg3],
+        borderColor: theme.card,
+        borderWidth: 3,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            color: theme.text,
+            usePointStyle: true,
+            generateLabels: function (chart) {
+              var base = Chart.overrides.doughnut.plugins.legend.labels.generateLabels(chart);
+              base.forEach(function (item, i) {
+                item.text = SEGMENTS[i].segment + '  ' + (SEGMENTS[i].share * 100).toFixed(1) + '%';
+                item.fontColor = theme.text;
+              });
+              return base;
+            }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function (ctx) {
+              var s = SEGMENTS[ctx.dataIndex];
+              return s.segment + ': ' + usdM(s.revenue) + ' (' + (s.share * 100).toFixed(1) + '%)';
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Re-theme charts when the viewer switches light/dark.
+  function applyTheme() {
+    theme = readTheme();
+    regionChart.data.datasets[0].backgroundColor = barColors();
+    regionChart.options.scales.x.ticks.color = theme.muted;
+    regionChart.options.scales.y.ticks.color = theme.muted;
+    regionChart.options.scales.y.grid.color = theme.grid;
+    regionChart.update('none');
+    segmentChart.data.datasets[0].backgroundColor = [theme.seg1, theme.seg2, theme.seg3];
+    segmentChart.data.datasets[0].borderColor = theme.card;
+    segmentChart.options.plugins.legend.labels.color = theme.text;
+    segmentChart.update('none');
+  }
+  if (window.matchMedia) {
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq.addEventListener) mq.addEventListener('change', applyTheme);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="snowflake-source" content="cortex-agent-authored" />
+  <title>Weekly Active Users</title>
+  <script type="application/json" id="snowflake-report-metadata">
+  {
+    "generated": "2026-11-17",
+    "intent": "Chart.js line/bar chart of weekly active users with a recent-weeks window slider, a line/bar toggle, and a seeded Randomize button for demo resampling",
+    "sections": [
+      { "id": "weekly-active-users", "title": "Weekly active users",
+        "dataSources": [{ "type": "query", "sql": "SELECT week_start, active_users FROM HTML_REPORTS_QS.DEMO.WEEKLY_ACTIVE_USERS ORDER BY week_start" }],
+        "producerNotes": "All 52 rows are inlined in the WAU constant. Re-run the query and replace WAU to refresh. Randomize does not touch WAU: it draws demo values from a seeded mulberry32 generator using the same formula as the table's setup script (1200 + n*35 + uniform(-120,120)). The slider window and chart type live in a state object outside the chart, so recreating the chart on a type toggle keeps the selected window." }
+    ]
+  }
+  </script>
+  <style>
+    :root { color-scheme: light dark; --accent: #29b5e8; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      max-width: 880px; width: 100%; box-sizing: border-box;
+      margin: 0 auto; padding: clamp(16px, 4vw, 24px);
+      color: light-dark(#1f2937, #e5e7eb);
+      background: light-dark(#ffffff, #0b1220);
+      line-height: 1.5;
+    }
+    h1, h2, h3 { color: light-dark(#0f172a, #f1f5f9); }
+    h1 { font-size: clamp(22px, 5vw, 28px); margin: 0 0 4px; }
+    h2 { font-size: 18px; margin: 28px 0 4px; }
+    .sub { margin: 0; color: light-dark(#6b7280, #9ca3af); font-size: 14px; }
+    img, svg { max-width: 100%; height: auto; }
+
+    .controls { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; margin: 16px 0 6px; }
+    .control { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+    .control input[type="range"] { width: min(240px, 52vw); accent-color: var(--accent); }
+    .wks { min-width: 52px; font-variant-numeric: tabular-nums; font-weight: 600; }
+    .btn {
+      padding: 6px 12px; border: 1px solid light-dark(#d1d5db, #374151); border-radius: 6px;
+      background: light-dark(#f9fafb, #111827); color: inherit; font: inherit; font-size: 14px; cursor: pointer;
+    }
+    .btn:hover { border-color: var(--accent); }
+    .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn:disabled { opacity: .45; cursor: default; border-color: light-dark(#d1d5db, #374151); }
+    .seg span { padding: 1px 4px; border-radius: 4px; color: light-dark(#6b7280, #9ca3af); }
+    .seg span.on { background: var(--accent); color: #fff; }
+    .summary { margin: 4px 0 0; font-size: 13px; color: light-dark(#6b7280, #9ca3af); font-variant-numeric: tabular-nums; }
+    .badge { display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 999px; font-size: 12px;
+      background: light-dark(#fef3c7, #422006); color: light-dark(#92400e, #fcd34d); }
+    .badge[hidden] { display: none; }
+
+    .chart-box { position: relative; width: 100%; height: 100%; }
+    .chart-box > canvas { width: 100% !important; height: 100% !important; }
+    table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+    th, td { border: 1px solid light-dark(#d1d5db, #374151); padding: 5px 9px; text-align: left; }
+    th { background: light-dark(#f3f4f6, #1f2937); font-weight: 600; position: sticky; top: 0; }
+    td.num, th.num { text-align: right; }
+
+    /* chart details menu */
+    .chart-card { position: relative; margin: 28px 0 8px; border-top: 1px solid light-dark(#e5e7eb, #374151); }
+    .chart-card-tools {
+      position: absolute; top: -13px; right: 12px; z-index: 2;
+      display: flex; gap: 2px; align-items: center; height: 26px; padding: 0 6px;
+      border: 1px solid transparent; border-radius: 999px;
+      background: Canvas; box-shadow: 0 1px 4px rgba(0,0,0,.1);
+      opacity: 0; pointer-events: none; transition: opacity .15s, border-color .15s;
+    }
+    .chart-card:hover .chart-card-tools, .chart-card:focus-within .chart-card-tools {
+      opacity: 1; pointer-events: auto; border-color: light-dark(#d1d5db, #374151);
+    }
+    @media (hover: none) { .chart-card-tools { opacity: 1; pointer-events: auto; border-color: light-dark(#d1d5db, #374151); } }
+    .chart-card-tools button {
+      padding: 4px 9px; border: 0; border-bottom: 2px solid transparent; background: none;
+      color: light-dark(#6b7280, #9ca3af); font: inherit; font-size: 12px; font-weight: 500; line-height: 14px; cursor: pointer; white-space: nowrap;
+    }
+    .chart-card-tools button:hover, .chart-card-tools button.active { color: CanvasText; }
+    .chart-card-tools button.active { border-bottom-color: var(--accent); }
+    .chart-card-tools button:focus-visible, .cc-copy:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .cc-panel { display: none; height: 340px; overflow: auto; padding-top: 14px; box-sizing: border-box; }
+    .cc-panel.active { display: block; }
+    .cc-panel pre { margin: 0; padding: 16px; border: 1px solid light-dark(#d1d5db, #374151); border-radius: 5px; background: light-dark(#f9fafb, #111827); font: 12px/1.6 ui-monospace, Menlo, monospace; overflow: auto; white-space: pre-wrap; }
+    .cc-sql { position: relative; }
+    .cc-copy { position: absolute; top: 8px; right: 8px; padding: 3px 10px; border: 1px solid light-dark(#d1d5db, #374151); border-radius: 4px; background: Canvas; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+    .cc-info p { margin: 0 0 9px; font-size: 14px; }
+    .cc-status { min-height: 18px; margin: 6px 0 0; font-size: 12px; color: light-dark(#6b7280, #9ca3af); }
+    @media (max-width: 500px) { .chart-card-tools { right: 0; gap: 0; padding: 0 2px; } .chart-card-tools button { padding: 4px 6px; font-size: 11px; } }
+
+    /* resolved-color probes for canvas theming */
+    .probe { position: absolute; width: 0; height: 0; overflow: hidden; }
+    #p-fg { color: light-dark(#374151, #d1d5db); }
+    #p-muted { color: light-dark(#6b7280, #9ca3af); }
+    #p-grid { color: light-dark(#e5e7eb, #1f2937); }
+  </style>
+</head>
+<body>
+  <span class="probe" id="p-fg"></span><span class="probe" id="p-muted"></span><span class="probe" id="p-grid"></span>
+
+  <h1>Weekly Active Users</h1>
+  <p class="sub">HTML_REPORTS_QS.DEMO.WEEKLY_ACTIVE_USERS · 52 weeks, Nov 3, 2025 to Oct 26, 2026</p>
+
+  <h2 id="weekly-active-users">Weekly active users</h2>
+  <div class="controls" role="group" aria-label="Chart controls">
+    <label class="control" for="weeks">Recent weeks
+      <input type="range" id="weeks" min="4" max="52" step="1" value="26" aria-describedby="weeks-out" />
+      <output id="weeks-out" class="wks" for="weeks">26 wks</output>
+    </label>
+    <button type="button" class="btn seg" id="toggle" aria-pressed="false" aria-label="Line / bar: switch chart type">
+      <span class="on" data-type="line">Line</span> / <span data-type="bar">bar</span>
+    </button>
+    <button type="button" class="btn" id="randomize">Randomize</button>
+    <button type="button" class="btn" id="restore" disabled>Show real data</button>
+  </div>
+  <p class="summary" id="summary" aria-live="polite"></p>
+
+  <div class="chart-card">
+    <div class="chart-card-tools" role="group" aria-label="Chart views">
+      <button type="button" class="active" data-view="chart" aria-pressed="true">Chart</button>
+      <button type="button" data-view="sql" aria-pressed="false">SQL</button>
+      <button type="button" data-view="preview" aria-pressed="false">Preview</button>
+      <button type="button" data-view="info" aria-pressed="false">Info</button>
+    </div>
+    <div class="cc-panel active" data-panel="chart"><div class="chart-box"><canvas id="wau" aria-label="Weekly active users chart" role="img"></canvas></div></div>
+    <div class="cc-panel" data-panel="sql">
+      <div class="cc-sql"><button type="button" class="cc-copy">Copy</button>
+<pre><code>SELECT week_start, active_users
+FROM HTML_REPORTS_QS.DEMO.WEEKLY_ACTIVE_USERS
+ORDER BY week_start</code></pre></div>
+    </div>
+    <div class="cc-panel" data-panel="preview">
+      <div style="overflow-x: auto;"><table>
+        <thead><tr><th>week_start</th><th class="num">active_users</th><th class="num">plotted value</th></tr></thead>
+        <tbody id="preview-body"></tbody>
+      </table></div>
+    </div>
+    <div class="cc-panel cc-info" data-panel="info">
+      <p><strong>What this shows:</strong> Active users per week, for the most recent N weeks chosen with the slider (4 to 52).</p>
+      <p><strong>Source:</strong> HTML_REPORTS_QS.DEMO.WEEKLY_ACTIVE_USERS, all 52 rows (weeks starting Monday, Nov 3, 2025 to Oct 26, 2026). Values are inlined from the query in the SQL view; nothing is fetched when you view the page.</p>
+      <p><strong>How it was derived:</strong> No aggregation. Each point is one row. The window keeps the latest N weeks. The summary line compares the first and last week in the window.</p>
+      <p><strong>Caveat:</strong> <em>Randomize</em> swaps in synthetic demo values. It uses a seeded generator (mulberry32) with the same formula as the table's setup script, 1200 + 35×week + uniform(−120, 120), so the values only change when you click. While randomized, a "Randomized" badge appears and the Preview shows real and plotted values side by side. <em>Show real data</em> puts the Snowflake values back. The table itself is synthetic sample data.</p>
+    </div>
+    <p class="cc-status" role="status" aria-live="polite"></p>
+  </div>
+
+  <script src="/libs/chart.js@4.4.4/chart.umd.js"></script>
+  <script>
+  (function () {
+    // SELECT week_start, active_users FROM HTML_REPORTS_QS.DEMO.WEEKLY_ACTIVE_USERS ORDER BY week_start
+    var WAU = [["2025-11-03",1173],["2025-11-10",1128],["2025-11-17",1233],["2025-11-24",1345],["2025-12-01",1348],["2025-12-08",1282],["2025-12-15",1454],["2025-12-22",1426],["2025-12-29",1493],["2026-01-05",1589],["2026-01-12",1500],["2026-01-19",1504],["2026-01-26",1616],["2026-02-02",1586],["2026-02-09",1757],["2026-02-16",1641],["2026-02-23",1753],["2026-03-02",1876],["2026-03-09",1814],["2026-03-16",1896],["2026-03-23",1793],["2026-03-30",2034],["2026-04-06",1892],["2026-04-13",1970],["2026-04-20",2040],["2026-04-27",2145],["2026-05-04",2104],["2026-05-11",2032],["2026-05-18",2278],["2026-05-25",2307],["2026-06-01",2327],["2026-06-08",2280],["2026-06-15",2394],["2026-06-22",2347],["2026-06-29",2351],["2026-07-06",2502],["2026-07-13",2383],["2026-07-20",2474],["2026-07-27",2516],["2026-08-03",2624],["2026-08-10",2686],["2026-08-17",2739],["2026-08-24",2612],["2026-08-31",2762],["2026-09-07",2825],["2026-09-14",2802],["2026-09-21",2761],["2026-09-28",2727],["2026-10-05",2792],["2026-10-12",2878],["2026-10-19",2848],["2026-10-26",3063]];
+    var REAL = WAU.map(function (r) { return r[1]; });
+    var ACCENT = '#29b5e8';
+    var DURATION = 500;
+
+    // All UI state lives here, so recreating the chart (type toggle) never loses the window.
+    var state = { weeks: 26, type: 'line', values: REAL.slice(), seed: 20261117, randomized: false, draws: 0 };
+
+    function mulberry32(a) {
+      return function () {
+        a |= 0; a = (a + 0x6D2B79F5) | 0;
+        var t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+    function resample() {
+      state.seed += 1; state.draws += 1;
+      var rnd = mulberry32(state.seed);
+      state.values = REAL.map(function (_, n) { return 1200 + n * 35 + Math.round(rnd() * 240 - 120); });
+      state.randomized = true;
+    }
+
+    var fmtDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    var fmtFull = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+    var fmtNum = new Intl.NumberFormat('en-US');
+    function d(iso) { var p = iso.split('-'); return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])); }
+    function windowStart() { return WAU.length - state.weeks; }
+    function windowLabels() { return WAU.slice(windowStart()).map(function (r) { return fmtDate.format(d(r[0])); }); }
+    function windowValues() { return state.values.slice(windowStart()); }
+
+    function color(id) { return getComputedStyle(document.getElementById(id)).color; }
+    function theme() { return { fg: color('p-fg'), muted: color('p-muted'), grid: color('p-grid') }; }
+
+    function datasetStyle(type) {
+      return type === 'bar'
+        ? { backgroundColor: 'rgba(41,181,232,0.75)', hoverBackgroundColor: ACCENT, borderColor: ACCENT, borderWidth: 0, borderRadius: 3, fill: false }
+        : { borderColor: ACCENT, backgroundColor: 'rgba(41,181,232,0.14)', borderWidth: 2.5, pointRadius: 2.5, pointHoverRadius: 5, pointBackgroundColor: ACCENT, tension: 0.3, fill: true };
+    }
+
+    var canvas = document.getElementById('wau');
+    var chart = null;
+    function build() {
+      var t = theme();
+      if (chart) chart.destroy();
+      var ds = Object.assign({ label: 'Active users', data: windowValues() }, datasetStyle(state.type));
+      chart = new Chart(canvas, {
+        type: state.type,
+        data: { labels: windowLabels(), datasets: [ds] },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          animation: { duration: DURATION, easing: 'easeOutQuart' },
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: function (items) { return 'Week of ' + fmtFull.format(d(WAU[windowStart() + items[0].dataIndex][0])); },
+                label: function (item) { return ' ' + fmtNum.format(item.parsed.y) + ' active users' + (state.randomized ? ' (randomized)' : ''); }
+              }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: t.muted, maxRotation: 0, autoSkip: true, autoSkipPadding: 12 } },
+            y: { beginAtZero: false, grid: { color: t.grid }, border: { display: false },
+                 ticks: { color: t.muted, callback: function (v) { return fmtNum.format(v); } },
+                 title: { display: true, text: 'Active users', color: t.muted } }
+          }
+        }
+      });
+    }
+
+    // Re-window / re-value in place so Chart.js animates the transition.
+    function refresh() {
+      chart.data.labels = windowLabels();
+      chart.data.datasets[0].data = windowValues();
+      chart.update();
+      renderMeta();
+    }
+
+    var weeksIn = document.getElementById('weeks');
+    var weeksOut = document.getElementById('weeks-out');
+    var toggle = document.getElementById('toggle');
+    var randomizeBtn = document.getElementById('randomize');
+    var restoreBtn = document.getElementById('restore');
+    var summary = document.getElementById('summary');
+    var previewBody = document.getElementById('preview-body');
+
+    function renderMeta() {
+      weeksOut.textContent = state.weeks + ' wks';
+      var s = windowStart(), vals = windowValues();
+      var first = vals[0], last = vals[vals.length - 1];
+      var pct = ((last - first) / first) * 100;
+      summary.innerHTML = '';
+      summary.appendChild(document.createTextNode(
+        fmtFull.format(d(WAU[s][0])) + ' to ' + fmtFull.format(d(WAU[WAU.length - 1][0])) +
+        ' · latest ' + fmtNum.format(last) +
+        ' · ' + (pct >= 0 ? '+' : '') + pct.toFixed(1) + '% over the window'));
+      var badge = document.createElement('span');
+      badge.className = 'badge';
+      badge.textContent = 'Randomized (draw ' + state.draws + ')';
+      badge.hidden = !state.randomized;
+      summary.appendChild(badge);
+      restoreBtn.disabled = !state.randomized;
+
+      var rows = [];
+      for (var i = WAU.length - 1; i >= s; i--) {
+        rows.push('<tr><td>' + WAU[i][0] + '</td><td class="num">' + fmtNum.format(WAU[i][1]) +
+          '</td><td class="num">' + fmtNum.format(state.values[i]) + '</td></tr>');
+      }
+      previewBody.innerHTML = rows.join('');
+    }
+
+    weeksIn.addEventListener('input', function () {
+      state.weeks = +weeksIn.value;
+      refresh();
+    });
+    toggle.addEventListener('click', function () {
+      state.type = state.type === 'line' ? 'bar' : 'line';
+      toggle.setAttribute('aria-pressed', String(state.type === 'bar'));
+      toggle.querySelectorAll('[data-type]').forEach(function (s) { s.classList.toggle('on', s.dataset.type === state.type); });
+      build();          // new chart of the other type, same state.weeks window and values
+      renderMeta();
+    });
+    randomizeBtn.addEventListener('click', function () { resample(); refresh(); });
+    restoreBtn.addEventListener('click', function () {
+      state.values = REAL.slice(); state.randomized = false; refresh();
+    });
+
+    var scheme = window.matchMedia('(prefers-color-scheme: dark)');
+    var onScheme = function () { build(); };
+    if (scheme.addEventListener) scheme.addEventListener('change', onScheme);
+
+    build();
+    renderMeta();
+
+    // Chart details menu
+    document.querySelectorAll('.chart-card').forEach(function (card) {
+      var buttons = card.querySelectorAll('[data-view]');
+      var status = card.querySelector('.cc-status');
+      buttons.forEach(function (button) {
+        button.addEventListener('click', function () {
+          buttons.forEach(function (b) {
+            b.classList.toggle('active', b === button);
+            b.setAttribute('aria-pressed', String(b === button));
+          });
+          card.querySelectorAll('.cc-panel').forEach(function (panel) {
+            panel.classList.toggle('active', panel.dataset.panel === button.dataset.view);
+          });
+          status.textContent = '';
+        });
+      });
+      var copy = card.querySelector('.cc-copy');
+      if (copy) copy.addEventListener('click', function () {
+        var declined = function () { status.textContent = 'SQL was not copied. Select it and copy it manually.'; };
+        status.textContent = 'Confirm the copy in the dialog…';
+        try {
+          navigator.clipboard.writeText(card.querySelector('.cc-sql code').textContent)
+            .then(function () { status.textContent = 'SQL copied.'; }, declined);
+        } catch (e) { declined(); }
+      });
+    });
+  })();
+  </script>
+</body>
+</html>

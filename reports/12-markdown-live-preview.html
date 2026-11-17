@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="snowflake-source" content="cortex-agent-authored" />
+  <title>Live Markdown editor</title>
+  <script type="application/json" id="snowflake-report-metadata">
+  {
+    "generated": "2026-11-17",
+    "intent": "Live Markdown editor: a textarea prefilled with a short README (heading, list, table, SQL code block) on the left and a Marked-rendered, highlight.js-highlighted preview on the right, updated on every keystroke.",
+    "sections": [
+      { "id": "editor", "title": "Live Markdown editor",
+        "producerNotes": "No data source. The starter README is the STARTER string in the inline script. Marked output is parsed into an inert <template>, passed through an allowlist DOM sanitizer (drops script/iframe/style/etc., on* attributes, and javascript:/non-image data: URLs), then inserted; code blocks are highlighted with highlight.js after each render." }
+    ]
+  }
+  </script>
+  <link rel="stylesheet" href="/libs/highlight.js@11.10.0/github.min.css" />
+  <style>
+    :root { color-scheme: light dark; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, system-ui, "Segoe UI", sans-serif;
+      max-width: 1180px; width: 100%;
+      margin: 0 auto; padding: clamp(16px, 4vw, 32px);
+      color: light-dark(#1f2937, #e5e7eb);
+      background: light-dark(#ffffff, #0f172a);
+      line-height: 1.55;
+    }
+    h1.page { font-size: clamp(1.5rem, 4vw, 2rem); margin: 0 0 6px; color: light-dark(#0f172a, #f1f5f9); }
+    .lede { margin: 0 0 20px; color: light-dark(#4b5563, #9ca3af); }
+    img, svg { max-width: 100%; height: auto; }
+    .panes {
+      display: grid; gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+      align-items: stretch;
+    }
+    .pane { display: flex; flex-direction: column; min-width: 0; }
+    .pane-title {
+      font-size: 0.78rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+      color: light-dark(#6b7280, #9ca3af); margin-bottom: 6px;
+    }
+    textarea {
+      flex: 1; width: 100%; min-height: 480px; resize: vertical; padding: 14px;
+      font: 13.5px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      border-radius: 8px; border: 1px solid light-dark(#d1d5db, #334155);
+      background: light-dark(#f9fafb, #111827); color: inherit; tab-size: 2;
+    }
+    textarea:focus-visible { outline: 2px solid #29b5e8; outline-offset: 2px; }
+    .preview {
+      flex: 1; min-height: 480px; padding: 4px 22px 18px; border-radius: 8px;
+      border: 1px solid light-dark(#e5e7eb, #334155);
+      background: light-dark(#ffffff, #0b1220);
+      overflow-wrap: anywhere; min-width: 0;
+    }
+    .status { margin-top: 8px; font-size: 0.8rem; color: light-dark(#6b7280, #9ca3af); min-height: 1.2em; }
+
+    /* Rendered Markdown */
+    .preview h1, .preview h2, .preview h3, .preview h4 { color: light-dark(#0f172a, #f1f5f9); line-height: 1.25; margin: 1.1em 0 0.5em; }
+    .preview h1 { font-size: 1.7rem; padding-bottom: 0.3em; border-bottom: 1px solid light-dark(#e5e7eb, #334155); }
+    .preview h2 { font-size: 1.3rem; padding-bottom: 0.25em; border-bottom: 1px solid light-dark(#e5e7eb, #334155); }
+    .preview a { color: light-dark(#2563eb, #60a5fa); }
+    .preview code { font: 0.88em ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .preview :not(pre) > code { padding: 0.15em 0.4em; border-radius: 4px; background: light-dark(#f3f4f6, #1e293b); }
+    .preview pre { margin: 1em 0; border-radius: 6px; overflow: hidden; border: 1px solid light-dark(#e5e7eb, #30363d); }
+    .preview pre code { display: block; padding: 14px 16px; overflow-x: auto; line-height: 1.5; }
+    .preview blockquote { margin: 1em 0; padding: 0 1em; color: light-dark(#4b5563, #9ca3af); border-left: 4px solid light-dark(#d1d5db, #475569); }
+    .preview .table-wrap { overflow-x: auto; margin: 1em 0; }
+    .preview table { border-collapse: collapse; width: 100%; }
+    .preview th, .preview td { border: 1px solid light-dark(#d1d5db, #374151); padding: 6px 12px; }
+    .preview th { background: light-dark(#f3f4f6, #1f2937); font-weight: 600; }
+    .preview tr:nth-child(even) td { background: light-dark(#fafafa, #111827); }
+    .preview hr { border: 0; border-top: 1px solid light-dark(#e5e7eb, #334155); margin: 1.5em 0; }
+    .preview ul, .preview ol { padding-left: 1.5em; }
+
+    /* highlight.js: github.min.css is a light theme. Give it a soft background in light mode
+       and swap to GitHub-dark token colors in dark mode. */
+    .preview pre code.hljs { background: light-dark(#f6f8fa, #0d1117); }
+    @media (prefers-color-scheme: dark) {
+      .hljs { color: #c9d1d9; background: #0d1117; }
+      .hljs-doctag, .hljs-keyword, .hljs-meta .hljs-keyword, .hljs-template-tag,
+      .hljs-template-variable, .hljs-type, .hljs-variable.language_ { color: #ff7b72; }
+      .hljs-title, .hljs-title.class_, .hljs-title.class_.inherited__, .hljs-title.function_ { color: #d2a8ff; }
+      .hljs-attr, .hljs-attribute, .hljs-literal, .hljs-meta, .hljs-number, .hljs-operator,
+      .hljs-selector-attr, .hljs-selector-class, .hljs-selector-id, .hljs-variable { color: #79c0ff; }
+      .hljs-meta .hljs-string, .hljs-regexp, .hljs-string { color: #a5d6ff; }
+      .hljs-built_in, .hljs-symbol { color: #ffa657; }
+      .hljs-code, .hljs-comment, .hljs-formula { color: #8b949e; }
+      .hljs-name, .hljs-quote, .hljs-selector-pseudo, .hljs-selector-tag { color: #7ee787; }
+      .hljs-subst, .hljs-emphasis, .hljs-strong { color: #c9d1d9; }
+      .hljs-section { color: #1f6feb; }
+      .hljs-bullet { color: #f2cc60; }
+      .hljs-addition { color: #aff5b4; background-color: #033a16; }
+      .hljs-deletion { color: #ffdcd7; background-color: #67060c; }
+    }
+  </style>
+</head>
+<body>
+  <h1 class="page">Live Markdown editor</h1>
+  <p class="lede">Edit the Markdown on the left; the preview on the right updates on every keystroke, with code blocks syntax-highlighted. Raw HTML in your Markdown is sanitized before it's shown.</p>
+
+  <section id="editor">
+    <div class="panes">
+      <div class="pane">
+        <label class="pane-title" for="src">Markdown</label>
+        <textarea id="src" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+      </div>
+      <div class="pane">
+        <div class="pane-title" id="preview-title">Preview</div>
+        <div class="preview" id="preview" aria-labelledby="preview-title"></div>
+        <div class="status" id="status" role="status" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <script src="/libs/marked@14.1.3/marked.min.js"></script>
+  <script src="/libs/highlight.js@11.10.0/highlight.min.js"></script>
+  <script>
+    (function () {
+      var STARTER = [
+        '# Revenue Dashboard',
+        '',
+        'A small **HTML report** that tracks quarterly revenue by region.',
+        '',
+        '## Features',
+        '',
+        '- Live KPIs refreshed from Snowflake',
+        '- Region breakdown with *drill-down*',
+        '- Works in light and dark mode',
+        '',
+        '## Q4 by region',
+        '',
+        '| Region | Revenue | YoY |',
+        '|---|---:|---:|',
+        '| North America | $1.2M | +9% |',
+        '| EMEA | $0.5M | +6% |',
+        '| APAC | $0.4M | +28% |',
+        '',
+        '## Query',
+        '',
+        '```sql',
+        'SELECT region,',
+        '       SUM(revenue) AS revenue',
+        'FROM sales.public.orders',
+        "WHERE quarter = 'Q4'",
+        'GROUP BY region',
+        'ORDER BY revenue DESC;',
+        '```',
+        ''
+      ].join('\n');
+
+      var src = document.getElementById('src');
+      var preview = document.getElementById('preview');
+      var status = document.getElementById('status');
+
+      // ---- Sanitizer -------------------------------------------------------
+      // Removed together with their contents.
+      var DROP_TAGS = new Set([
+        'script', 'style', 'iframe', 'frame', 'frameset', 'object', 'embed', 'applet',
+        'link', 'meta', 'base', 'form', 'textarea', 'select', 'option', 'button',
+        'noscript', 'template', 'svg', 'math', 'video', 'audio', 'source', 'track',
+        'canvas', 'dialog', 'title', 'head', 'portal', 'xmp', 'plaintext', 'noembed', 'noframes'
+      ]);
+      // Kept. Anything not listed here and not in DROP_TAGS is unwrapped (children kept).
+      var ALLOWED_TAGS = new Set([
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'hr', 'div', 'span',
+        'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'kbd', 'samp',
+        'em', 'strong', 'b', 'i', 'u', 's', 'del', 'ins', 'mark', 'sub', 'sup', 'small',
+        'a', 'img', 'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption',
+        'input', 'details', 'summary', 'dl', 'dt', 'dd', 'abbr'
+      ]);
+      var GLOBAL_ATTRS = ['title'];
+      var TAG_ATTRS = {
+        a: ['href'],
+        img: ['src', 'alt', 'width', 'height'],
+        th: ['align', 'colspan', 'rowspan'],
+        td: ['align', 'colspan', 'rowspan'],
+        ol: ['start'],
+        code: ['class'],
+        input: ['type', 'checked', 'disabled'],
+        details: ['open'],
+        abbr: ['title']
+      };
+      var SAFE_IMG_DATA = /^data:image\/(png|gif|jpe?g|webp|avif);/i;
+
+      function isSafeUrl(value, forImage) {
+        // Drop whitespace/control chars browsers ignore inside schemes (e.g. "java\tscript:").
+        var v = String(value).replace(/[\u0000-\u0020\u007f-\u009f]/g, '');
+        var m = /^([a-z][a-z0-9+.\-]*):/i.exec(v);
+        if (!m) return true; // relative URL or #fragment
+        var scheme = m[1].toLowerCase();
+        if (scheme === 'http' || scheme === 'https') return true;
+        if (!forImage && (scheme === 'mailto' || scheme === 'tel')) return true;
+        if (forImage && scheme === 'data') return SAFE_IMG_DATA.test(v);
+        return false;
+      }
+
+      function sanitizeElementAttrs(el, tag, stats) {
+        var allowed = GLOBAL_ATTRS.concat(TAG_ATTRS[tag] || []);
+        Array.prototype.slice.call(el.attributes).forEach(function (attr) {
+          var name = attr.name.toLowerCase();
+          if (name.indexOf('on') === 0 || allowed.indexOf(name) === -1) {
+            el.removeAttribute(attr.name);
+            if (name.indexOf('on') === 0) stats.removed++;
+            return;
+          }
+          if ((name === 'href' || name === 'src') && !isSafeUrl(attr.value, name === 'src')) {
+            el.removeAttribute(attr.name);
+            stats.removed++;
+          }
+          if (name === 'class') {
+            // Keep only highlight.js language hints like "language-sql".
+            var keep = attr.value.split(/\s+/).filter(function (c) { return /^language-[\w+#.\-]+$/.test(c); });
+            if (keep.length) el.setAttribute('class', keep.join(' ')); else el.removeAttribute('class');
+          }
+        });
+        if (tag === 'a' && el.hasAttribute('href')) el.setAttribute('rel', 'noopener noreferrer nofollow');
+      }
+
+      function sanitizeChildren(parent, stats) {
+        Array.prototype.slice.call(parent.childNodes).forEach(function (node) {
+          if (node.nodeType === Node.COMMENT_NODE || node.nodeType === Node.PROCESSING_INSTRUCTION_NODE) {
+            node.remove();
+            return;
+          }
+          if (node.nodeType !== Node.ELEMENT_NODE) return;
+          var tag = node.localName.toLowerCase();
+          if (DROP_TAGS.has(tag)) {
+            node.remove();
+            stats.removed++;
+            return;
+          }
+          if (!ALLOWED_TAGS.has(tag)) {
+            sanitizeChildren(node, stats);
+            while (node.firstChild) parent.insertBefore(node.firstChild, node);
+            node.remove();
+            stats.removed++;
+            return;
+          }
+          if (tag === 'input') {
+            // Only GFM task-list checkboxes, and never interactive.
+            if ((node.getAttribute('type') || '').toLowerCase() !== 'checkbox') {
+              node.remove();
+              stats.removed++;
+              return;
+            }
+          }
+          sanitizeElementAttrs(node, tag, stats);
+          if (tag === 'input') node.setAttribute('disabled', '');
+          sanitizeChildren(node, stats);
+        });
+      }
+
+      // Parse into an inert <template> (no scripts run, no resources load), sanitize, return a fragment.
+      function sanitizeHtml(html) {
+        var tpl = document.createElement('template');
+        tpl.innerHTML = html;
+        var stats = { removed: 0 };
+        sanitizeChildren(tpl.content, stats);
+        return { fragment: tpl.content, removed: stats.removed };
+      }
+
+      // ---- Render ----------------------------------------------------------
+      if (typeof hljs !== 'undefined') hljs.configure({ ignoreUnescapedHTML: true });
+
+      function highlight(root) {
+        if (typeof hljs === 'undefined') return;
+        root.querySelectorAll('pre code').forEach(function (block) {
+          var m = /(?:^|\s)language-([\w+#.\-]+)/.exec(block.className || '');
+          if (m && !hljs.getLanguage(m[1])) {
+            block.className = 'language-plaintext';
+          }
+          try { hljs.highlightElement(block); } catch (e) { /* leave block unhighlighted */ }
+        });
+      }
+
+      function wrapTables(root) {
+        root.querySelectorAll('table').forEach(function (table) {
+          var wrap = document.createElement('div');
+          wrap.className = 'table-wrap';
+          table.parentNode.insertBefore(wrap, table);
+          wrap.appendChild(table);
+        });
+      }
+
+      function render() {
+        if (typeof marked === 'undefined') {
+          preview.textContent = 'Markdown library failed to load.';
+          return;
+        }
+        var html;
+        try {
+          html = marked.parse(src.value, { gfm: true, breaks: false, async: false });
+        } catch (e) {
+          preview.textContent = 'Could not parse Markdown: ' + (e && e.message ? e.message : String(e));
+          return;
+        }
+        var result = sanitizeHtml(html);
+        wrapTables(result.fragment);
+        preview.replaceChildren(result.fragment);
+        highlight(preview);
+        status.textContent = result.removed
+          ? 'Removed ' + result.removed + ' unsafe item' + (result.removed === 1 ? '' : 's') + ' from the preview.'
+          : '';
+      }
+
+      src.value = STARTER;
+      src.addEventListener('input', render);
+      render();
+    })();
+  </script>
+</body>
+</html>
