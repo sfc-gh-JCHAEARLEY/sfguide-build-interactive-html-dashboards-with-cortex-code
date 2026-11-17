@@ -17,7 +17,7 @@ The guide is prompt-driven: each step gives you a prompt for Cortex Code (CoCo),
 | File | Guide step | Shows |
 |---|---|---|
 | `01-q3-revenue-review.html` | Build Your First Report | Count-up KPIs, bar and doughnut charts, collapsed View SQL, summary table |
-| `02-q3-revenue-review-edited.html` | Iterate with Targeted Edits | Report 01 after the three edit prompts: highlighted bar with $K labels, "What changed vs Q2" callout, sortable table |
+| `02-q3-revenue-review-edited.html` | Iterate with Targeted Edits | Report 01 after the three edit prompts: highlighted bar with $M labels, "What changed vs Q2" callout, sortable table |
 | `03-qbr-slide-deck.html` | Turn Findings into a Slide Deck | Full-bleed slides, arrows, dots, slide counter, wrap-around, arrow keys, crossfade |
 | `04-weekly-digest-spec.html` | Build a Designed Spec with a Prototype | Toggle switch, day picker, live "Next digest" line, animated panel |
 | `05-chartjs-weekly-active-users.html` | Realm of Possible: Charts | Chart.js range slider, line/bar toggle, seeded Randomize |
